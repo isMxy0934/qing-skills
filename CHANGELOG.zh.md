@@ -1,3 +1,9 @@
+## 0.3.3 - 2026-02-03
+
+### 文档
+- 修正脚本说明：technical-analysis/ai-decision 头部输入输出路径与 output/{code}/{date} 一致
+- README 中明确指标状态：已实现 MA/MACD/RSI，KDJ 为计划实现
+
 ## 0.3.2 - 2026-02-03
 
 ### 重构

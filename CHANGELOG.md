@@ -1,3 +1,9 @@
+## 0.3.3 - 2026-02-03
+
+### Documentation
+- Align technical-analysis and ai-decision script docstrings with output/{code}/{date} data flow
+- Clarify technical-analysis indicator status (KDJ marked as planned)
+
 ## 0.3.2 - 2026-02-03
 
 ### Refactor
