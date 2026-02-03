@@ -6,8 +6,8 @@ AI 决策脚本
     python decision.py 600519 --date 2025-01-01
     python decision.py 600519 --date 2025-01-01 --news "新闻内容"
 
-输入: analysis/<code>/<date>.json
-输出: decision/<code>/<date>.json
+输入: output/<code>/<date>/analysis.json
+输出: output/<code>/<date>/decision.json
 """
 
 import json
