@@ -336,13 +336,20 @@ def collect_stock_data(code: str, days: int = 60) -> dict:
             'pct_chg': round(float(row.get('pct_chg', 0)), 2),
         })
 
-    # 获取实时行情
-    realtime = fetch_realtime_quote(code, market)
+    # 获取实时行情（可选，失败不影响主流程）
+    realtime = None
+    try:
+        realtime = fetch_realtime_quote(code, market)
+    except Exception as e:
+        print(f"[警告] 实时行情获取失败: {e}", file=sys.stderr)
 
-    # 获取筹码分布（仅 A股）
+    # 获取筹码分布（仅 A股，可选）
     chip = None
     if market == "A股":
-        chip = fetch_chip_distribution(code)
+        try:
+            chip = fetch_chip_distribution(code)
+        except Exception as e:
+            print(f"[警告] 筹码数据获取失败: {e}", file=sys.stderr)
 
     return {
         'code': code,
