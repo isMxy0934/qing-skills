@@ -1,3 +1,9 @@
+## 0.2.1 - 2026-02-03
+
+### Fixes
+- Graceful degradation when realtime/chip data fetch fails in data-collect
+- Fix numpy.bool_ JSON serialization error in technical-analysis
+
 ## 0.2.0 - 2026-02-03
 
 ### Features
