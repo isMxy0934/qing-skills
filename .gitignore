@@ -1,5 +1,8 @@
 .DS_Store
- __pycache__/                                                                                                                                                                                                             
-*.pyc                                                                                                                                                                                                                    
-*.pyo                                                                                                                                                                                                                    
-.env 
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# 运行时数据目录
+output/
