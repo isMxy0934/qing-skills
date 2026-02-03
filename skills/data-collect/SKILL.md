@@ -10,14 +10,20 @@ description: 收集股票行情数据（K线、实时行情、筹码分布），
 ## 执行
 
 ```bash
-python scripts/collect_stock_data.py <股票代码> [天数]
+python scripts/collect_stock_data.py <股票代码> [--date YYYY-MM-DD] [--days N]
 
 # 示例
-python scripts/collect_stock_data.py 600519        # A股，默认60天
-python scripts/collect_stock_data.py 000001 90     # A股，90天
-python scripts/collect_stock_data.py 00700         # 港股
-python scripts/collect_stock_data.py AAPL          # 美股
-python scripts/collect_stock_data.py 512880        # ETF
+python scripts/collect_stock_data.py 600519                      # A股，今天
+python scripts/collect_stock_data.py 600519 --date 2025-01-01    # 指定日期
+python scripts/collect_stock_data.py 000001 --days 90            # 90天数据
+python scripts/collect_stock_data.py AAPL --date 2025-01-01      # 美股
+```
+
+## 输出位置
+
+```
+output/data/<股票代码>/<日期>.json
+例如: output/data/600519/2025-01-01.json
 ```
 
 ## 市场识别规则

@@ -363,14 +363,38 @@ def collect_stock_data(code: str, days: int = 60) -> dict:
     }
 
 
+def get_project_root() -> str:
+    """获取项目根目录"""
+    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+
+def save_to_file(data: dict, code: str, date_str: str) -> str:
+    """保存数据到文件"""
+    root = get_project_root()
+    output_dir = os.path.join(root, 'output', 'data', code)
+    os.makedirs(output_dir, exist_ok=True)
+
+    output_path = os.path.join(output_dir, f'{date_str}.json')
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+    return output_path
+
+
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("用法: python collect_stock_data.py <股票代码> [天数]")
-        print("示例: python collect_stock_data.py 600519 60")
-        sys.exit(1)
+    import argparse
+    import os
 
-    code = sys.argv[1]
-    days = int(sys.argv[2]) if len(sys.argv) > 2 else 60
+    parser = argparse.ArgumentParser(description='股票数据收集')
+    parser.add_argument('code', help='股票代码')
+    parser.add_argument('--days', type=int, default=60, help='获取天数（默认60）')
+    parser.add_argument('--date', help='保存日期，格式 YYYY-MM-DD（默认今天）')
+    args = parser.parse_args()
 
-    result = collect_stock_data(code, days)
+    date_str = args.date or datetime.now().strftime('%Y-%m-%d')
+
+    result = collect_stock_data(args.code, args.days)
+    output_path = save_to_file(result, args.code, date_str)
+
+    print(f"[保存] {output_path}", file=sys.stderr)
     print(json.dumps(result, ensure_ascii=False, indent=2))
