@@ -197,7 +197,7 @@ def calculate_bias(price: float, ma5: float, ma10: float, ma20: float) -> dict:
         'ma5': round(bias_ma5, 2),
         'ma10': round(bias_ma10, 2),
         'ma20': round(bias_ma20, 2),
-        'warning': warning,
+        'warning': bool(warning),
         'status': status
     }
 
