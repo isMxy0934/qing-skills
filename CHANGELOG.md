@@ -1,3 +1,10 @@
+## 0.3.0 - 2026-02-03
+
+### Features
+- Add file persistence for data pipeline: output/data/, output/analysis/, output/decision/
+- Support `--date` parameter for specifying data date (format: YYYY-MM-DD)
+- Each step reads from previous step's output file instead of stdin pipe
+
 ## 0.2.1 - 2026-02-03
 
 ### Fixes
