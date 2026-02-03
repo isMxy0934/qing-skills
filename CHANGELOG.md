@@ -1,3 +1,8 @@
+## 0.3.2 - 2026-02-03
+
+### Refactor
+- Reorganize output directory structure: consolidate files by stock code and date (output/{code}/{date}/{type}.json)
+
 ## 0.3.1 - 2026-02-03
 
 ### Fixes
