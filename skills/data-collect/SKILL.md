@@ -1,28 +1,23 @@
 ---
 name: data-collect
-description: 收集股票行情数据（K线、实时行情、筹码分布），支持 A股/港股/美股/ETF。当用户需要获取股票数据时使用。触发场景：(1) "获取茅台的数据" (2) "查一下 AAPL 行情" (3) "拉取 600519 K线" (4) "收集股票数据" (5) 任何涉及获取股票历史数据、实时报价的请求
+description: 收集股票行情数据（K线、实时行情、筹码分布），支持 A股/港股/美股/ETF。当用户需要获取股票数据时使用。触发场景：(1) "获取茅台的数据" (2) "查一下 AAPL 行情" (3) "拉取 600519 K线" (4) "收集股票数据" (5) 任何涉及获取股票历史数据、实时报价的请求。注意：筹码分布仅 A股 支持
 ---
 
 # 股票数据收集
 
-收集指定股票的完整数据：历史K线、实时行情、筹码分布（A股）。
-
-## 使用方式
-
-```
-/data-collect 600519        # A股：贵州茅台，默认60天
-/data-collect 000001 90     # A股：平安银行，90天
-/data-collect 00700         # 港股：腾讯
-/data-collect AAPL          # 美股：苹果
-/data-collect 512880        # ETF：证券ETF
-```
+收集指定股票的完整数据：历史K线、实时行情、筹码分布（仅A股）。
 
 ## 执行
 
-运行脚本获取数据：
-
 ```bash
 python scripts/collect_stock_data.py <股票代码> [天数]
+
+# 示例
+python scripts/collect_stock_data.py 600519        # A股，默认60天
+python scripts/collect_stock_data.py 000001 90     # A股，90天
+python scripts/collect_stock_data.py 00700         # 港股
+python scripts/collect_stock_data.py AAPL          # 美股
+python scripts/collect_stock_data.py 512880        # ETF
 ```
 
 ## 市场识别规则
@@ -61,5 +56,4 @@ python scripts/collect_stock_data.py <股票代码> [天数]
 
 1. 每次请求间隔 2-5 秒防封禁
 2. A股自动切换数据源（东方财富→新浪→腾讯）
-3. 筹码数据仅 A股 支持
-4. 依赖：`pip install akshare pandas`
+3. 依赖：`pip install akshare pandas`
