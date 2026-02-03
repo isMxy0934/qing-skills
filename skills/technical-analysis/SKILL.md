@@ -10,12 +10,17 @@ description: 对股票K线数据进行技术分析，计算MA/MACD/RSI等指标�
 ## 执行
 
 ```bash
-# 完整流程：收集数据 → 技术分析
-python data-collect/scripts/collect_stock_data.py 600519 | python scripts/analyze.py
+python scripts/analyze.py <股票代码> --date YYYY-MM-DD
 
-# 或分步执行
-python data-collect/scripts/collect_stock_data.py 600519 > stock.json
-cat stock.json | python scripts/analyze.py
+# 示例
+python scripts/analyze.py 600519 --date 2025-01-01
+```
+
+## 数据流
+
+```
+读取: output/data/<股票代码>/<日期>.json
+输出: output/analysis/<股票代码>/<日期>.json
 ```
 
 ## 核心交易理念

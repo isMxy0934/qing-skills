@@ -3,14 +3,14 @@
 股票技术分析脚本
 
 用法:
-    python analyze.py < stock_data.json
-    cat stock_data.json | python analyze.py
+    python analyze.py 600519 --date 2025-01-01
 
-输入: data-collect 的 JSON 输出
-输出: 完整技术分析结果 JSON
+输入: data/<code>/<date>.json
+输出: analysis/<code>/<date>.json
 """
 
 import json
+import os
 import sys
 from datetime import datetime
 from enum import Enum
@@ -547,7 +547,41 @@ def technical_analysis(stock_data: dict) -> dict:
     }
 
 
+def get_project_root() -> str:
+    """获取项目根目录"""
+    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+
 if __name__ == "__main__":
-    input_data = json.load(sys.stdin)
+    import argparse
+
+    parser = argparse.ArgumentParser(description='股票技术分析')
+    parser.add_argument('code', help='股票代码')
+    parser.add_argument('--date', required=True, help='日期，格式 YYYY-MM-DD')
+    args = parser.parse_args()
+
+    root = get_project_root()
+
+    # 读取数据文件
+    input_path = os.path.join(root, 'output', 'data', args.code, f'{args.date}.json')
+    if not os.path.exists(input_path):
+        print(f"[错误] 数据文件不存在: {input_path}", file=sys.stderr)
+        sys.exit(1)
+
+    with open(input_path, 'r', encoding='utf-8') as f:
+        input_data = json.load(f)
+
+    # 执行分析
     result = technical_analysis(input_data)
+
+    # 保存结果
+    output_dir = os.path.join(root, 'output', 'analysis', args.code)
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, f'{args.date}.json')
+
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(result, f, ensure_ascii=False, indent=2)
+
+    print(f"[读取] {input_path}", file=sys.stderr)
+    print(f"[保存] {output_path}", file=sys.stderr)
     print(json.dumps(result, ensure_ascii=False, indent=2))
