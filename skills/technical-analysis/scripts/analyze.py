@@ -5,8 +5,8 @@
 用法:
     python analyze.py 600519 --date 2025-01-01
 
-输入: data/<code>/<date>.json
-输出: analysis/<code>/<date>.json
+输入: output/<code>/<date>/data.json
+输出: output/<code>/<date>/analysis.json
 """
 
 import json
