@@ -1,3 +1,20 @@
+## 0.3.1 - 2026-02-03
+
+### Fixes
+- Enhance data-collect script robustness with NaN/null value handling
+- Add system proxy disabling for better domestic data source access
+- Add 3-retry mechanism for realtime quote fetching
+- Standardize date format to YYYY-MM-DD consistently
+
+### Refactor
+- Restructure data-collect SKILL.md following Cursor Skills best practices
+- Simplify description from 300 to 120 characters
+- Implement progressive disclosure pattern with reference documentation
+
+### Documentation
+- Add detailed market identification rules (markets.md)
+- Add complete output field specifications (fields.md)
+
 ## 0.3.0 - 2026-02-03
 
 ### Features
