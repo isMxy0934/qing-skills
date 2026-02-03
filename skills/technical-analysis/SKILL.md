@@ -19,8 +19,8 @@ python scripts/analyze.py 600519 --date 2025-01-01
 ## 数据流
 
 ```
-读取: output/data/<股票代码>/<日期>.json
-输出: output/analysis/<股票代码>/<日期>.json
+读取: output/<股票代码>/<日期>/data.json
+输出: output/<股票代码>/<日期>/analysis.json
 ```
 
 ## 核心交易理念

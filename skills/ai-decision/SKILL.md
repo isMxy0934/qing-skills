@@ -20,8 +20,8 @@ python scripts/decision.py 600519 --date 2025-01-01 --news "公司发布利好�
 ## 数据流
 
 ```
-读取: output/analysis/<股票代码>/<日期>.json
-输出: output/decision/<股票代码>/<日期>.json
+读取: output/<股票代码>/<日期>/analysis.json
+输出: output/<股票代码>/<日期>/decision.json
 ```
 
 ## 完整流程

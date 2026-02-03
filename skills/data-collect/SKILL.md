@@ -35,7 +35,7 @@ python scripts/collect_stock_data.py AAPL --days 30              # 美股30天
 ## 输出结构
 
 ```
-output/data/<股票代码>/<日期>.json
+output/<股票代码>/<日期>/data.json
 ```
 
 输出包含：

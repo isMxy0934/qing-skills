@@ -290,7 +290,7 @@ if __name__ == "__main__":
     root = get_project_root()
 
     # 读取分析文件
-    input_path = os.path.join(root, 'output', 'analysis', args.code, f'{args.date}.json')
+    input_path = os.path.join(root, 'output', args.code, args.date, 'analysis.json')
     if not os.path.exists(input_path):
         print(f"[错误] 分析文件不存在: {input_path}", file=sys.stderr)
         sys.exit(1)
@@ -302,9 +302,9 @@ if __name__ == "__main__":
     result = ai_decision(analysis, news_context=args.news)
 
     # 保存结果
-    output_dir = os.path.join(root, 'output', 'decision', args.code)
+    output_dir = os.path.join(root, 'output', args.code, args.date)
     os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, f'{args.date}.json')
+    output_path = os.path.join(output_dir, 'decision.json')
 
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
