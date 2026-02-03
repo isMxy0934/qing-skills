@@ -10,15 +10,31 @@ description: 基于技术分析结果生成投资决策仪表盘，包括核心�
 ## 执行
 
 ```bash
-# 完整流程：收集 → 分析 → 决策
-python data-collect/scripts/collect_stock_data.py 600519 \
-  | python technical-analysis/scripts/analyze.py \
-  | python scripts/decision.py
+python scripts/decision.py <股票代码> --date YYYY-MM-DD [--news "舆情内容"]
 
-# 带舆情输入
-python data-collect/scripts/collect_stock_data.py 600519 \
-  | python technical-analysis/scripts/analyze.py \
-  | python scripts/decision.py --news "公司发布利好公告"
+# 示例
+python scripts/decision.py 600519 --date 2025-01-01
+python scripts/decision.py 600519 --date 2025-01-01 --news "公司发布利好公告"
+```
+
+## 数据流
+
+```
+读取: output/analysis/<股票代码>/<日期>.json
+输出: output/decision/<股票代码>/<日期>.json
+```
+
+## 完整流程
+
+```bash
+# 1. 收集数据
+python data-collect/scripts/collect_stock_data.py 600519 --date 2025-01-01
+
+# 2. 技术分析
+python technical-analysis/scripts/analyze.py 600519 --date 2025-01-01
+
+# 3. 生成决策
+python scripts/decision.py 600519 --date 2025-01-01
 ```
 
 ## 输出内容
