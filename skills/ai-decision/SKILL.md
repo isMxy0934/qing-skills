@@ -7,21 +7,18 @@ description: 基于技术分析结果生成投资决策仪表盘，包括核心�
 
 基于技术分析结果，生成完整的投资决策建议。
 
-## 工作流
-
-```
-/data-collect 600519
-       ↓
-/technical-analysis <stock_data>
-       ↓
-/ai-decision <analysis_result> [news]
-```
-
 ## 执行
 
 ```bash
-cat analysis.json | python scripts/decision.py
-cat analysis.json | python scripts/decision.py --news "新闻内容"
+# 完整流程：收集 → 分析 → 决策
+python data-collect/scripts/collect_stock_data.py 600519 \
+  | python technical-analysis/scripts/analyze.py \
+  | python scripts/decision.py
+
+# 带舆情输入
+python data-collect/scripts/collect_stock_data.py 600519 \
+  | python technical-analysis/scripts/analyze.py \
+  | python scripts/decision.py --news "公司发布利好公告"
 ```
 
 ## 输出内容

@@ -227,14 +227,13 @@ def parse_news_intelligence(news_context: str = None) -> dict:
     }
 
 
-def ai_decision(analysis: dict, stock_data: dict = None, news_context: str = None) -> dict:
+def ai_decision(analysis: dict, news_context: str = None) -> dict:
     """主决策函数"""
     code = analysis.get('code', 'Unknown')
     name = analysis.get('name', code)
 
-    chip = None
-    if stock_data and 'chip' in stock_data:
-        chip = stock_data['chip']
+    # chip 数据由 technical-analysis 透传
+    chip = analysis.get('chip')
 
     price_levels = calculate_price_levels(analysis)
     core_conclusion = generate_core_conclusion(analysis, price_levels)
@@ -280,6 +279,6 @@ if __name__ == "__main__":
     parser.add_argument('--news', type=str, help='新闻舆情内容')
     args = parser.parse_args()
 
-    input_data = json.load(sys.stdin)
-    result = ai_decision(input_data, news_context=args.news)
+    analysis = json.load(sys.stdin)
+    result = ai_decision(analysis, news_context=args.news)
     print(json.dumps(result, ensure_ascii=False, indent=2))
