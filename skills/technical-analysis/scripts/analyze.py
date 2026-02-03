@@ -525,6 +525,7 @@ def technical_analysis(stock_data: dict) -> dict:
     return {
         'code': stock_data['code'],
         'name': stock_data.get('name', stock_data['code']),
+        'market': stock_data.get('market', ''),
         'analysis_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'trend': trend,
         'price': {
@@ -539,7 +540,10 @@ def technical_analysis(stock_data: dict) -> dict:
         'rsi': rsi,
         'volume': volume,
         'support_resistance': support,
-        'signal': signal
+        'signal': signal,
+        # 透传原始数据供下游使用
+        'chip': stock_data.get('chip'),
+        'realtime': stock_data.get('realtime'),
     }
 
 
