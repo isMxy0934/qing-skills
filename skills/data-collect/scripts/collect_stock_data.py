@@ -4,14 +4,15 @@
 支持 A股/港股/美股/ETF
 
 用法:
-    python collect_stock_data.py <股票代码> [天数]
+    python collect_stock_data.py <股票代码> [--days N] [--date YYYY-MM-DD]
 
 示例:
-    python collect_stock_data.py 600519        # A股：贵州茅台，默认60天
-    python collect_stock_data.py 000001 90     # A股：平安银行，90天
-    python collect_stock_data.py 00700         # 港股：腾讯
-    python collect_stock_data.py AAPL          # 美股：苹果
-    python collect_stock_data.py 512880        # ETF：证券ETF
+    python collect_stock_data.py 600519                      # A股，60天
+    python collect_stock_data.py 000001 --days 90            # A股，90天
+    python collect_stock_data.py 00700 --days 30             # 港股，30天
+    python collect_stock_data.py AAPL --days 30              # 美股，30天
+    python collect_stock_data.py 512880                      # ETF，60天
+    python collect_stock_data.py 600519 --date 2025-01-01   # 指定保存日期
 """
 
 import re
@@ -19,32 +20,29 @@ import random
 import time
 import json
 import sys
+import os
 from datetime import datetime, timedelta
 
 import akshare as ak
 import pandas as pd
 
 
-# === 防封禁策略 ===
-USER_AGENTS = [
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0.0.0',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15',
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0.0.0',
-]
-
-_cache = {'data': None, 'timestamp': 0, 'ttl': 1200}  # 20分钟缓存
+# 禁用代理，akshare 访问国内数据源不需要代理
+os.environ['NO_PROXY'] = '*'
+os.environ['no_proxy'] = '*'
+if 'HTTP_PROXY' in os.environ:
+    del os.environ['HTTP_PROXY']
+if 'HTTPS_PROXY' in os.environ:
+    del os.environ['HTTPS_PROXY']
+if 'http_proxy' in os.environ:
+    del os.environ['http_proxy']
+if 'https_proxy' in os.environ:
+    del os.environ['https_proxy']
 
 
 def random_sleep(min_sec: float = 2.0, max_sec: float = 5.0):
     """随机休眠，防止请求过快"""
     time.sleep(random.uniform(min_sec, max_sec))
-
-
-def get_random_ua() -> str:
-    """获取随机 User-Agent"""
-    return random.choice(USER_AGENTS)
 
 
 # === 市场识别 ===
@@ -325,23 +323,50 @@ def collect_stock_data(code: str, days: int = 60) -> dict:
     # 转换为列表格式
     klines = []
     for _, row in klines_df.iterrows():
+        # 安全转换函数
+        def safe_float(val, default=0.0):
+            try:
+                return float(val) if pd.notna(val) else default
+            except (ValueError, TypeError):
+                return default
+        
+        def safe_int(val, default=0):
+            try:
+                return int(val) if pd.notna(val) else default
+            except (ValueError, TypeError):
+                return default
+        
+        # 标准化日期格式为 YYYY-MM-DD
+        date_val = row['date']
+        if isinstance(date_val, pd.Timestamp):
+            date_str = date_val.strftime('%Y-%m-%d')
+        else:
+            date_str = str(date_val).split()[0]  # 去除可能的时间部分
+        
         klines.append({
-            'date': str(row['date']),
-            'open': round(float(row['open']), 2),
-            'high': round(float(row['high']), 2),
-            'low': round(float(row['low']), 2),
-            'close': round(float(row['close']), 2),
-            'volume': int(row['volume']),
-            'amount': float(row.get('amount', 0)),
-            'pct_chg': round(float(row.get('pct_chg', 0)), 2),
+            'date': date_str,
+            'open': round(safe_float(row['open']), 2),
+            'high': round(safe_float(row['high']), 2),
+            'low': round(safe_float(row['low']), 2),
+            'close': round(safe_float(row['close']), 2),
+            'volume': safe_int(row['volume']),
+            'amount': safe_float(row.get('amount', 0)),
+            'pct_chg': round(safe_float(row.get('pct_chg', 0)), 2),
         })
 
     # 获取实时行情（可选，失败不影响主流程）
     realtime = None
-    try:
-        realtime = fetch_realtime_quote(code, market)
-    except Exception as e:
-        print(f"[警告] 实时行情获取失败: {e}", file=sys.stderr)
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            realtime = fetch_realtime_quote(code, market)
+            break
+        except Exception as e:
+            if attempt < max_retries - 1:
+                print(f"[警告] 实时行情获取失败(尝试 {attempt + 1}/{max_retries}): {e}", file=sys.stderr)
+                time.sleep(2)
+            else:
+                print(f"[警告] 实时行情获取失败，已重试 {max_retries} 次: {e}", file=sys.stderr)
 
     # 获取筹码分布（仅 A股，可选）
     chip = None
@@ -364,8 +389,11 @@ def collect_stock_data(code: str, days: int = 60) -> dict:
 
 
 def get_project_root() -> str:
-    """获取项目根目录"""
-    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    """获取项目根目录（向上4级：scripts -> data-collect -> skills -> project）"""
+    current = os.path.abspath(__file__)
+    for _ in range(4):
+        current = os.path.dirname(current)
+    return current
 
 
 def save_to_file(data: dict, code: str, date_str: str) -> str:
@@ -383,18 +411,21 @@ def save_to_file(data: dict, code: str, date_str: str) -> str:
 
 if __name__ == "__main__":
     import argparse
-    import os
 
     parser = argparse.ArgumentParser(description='股票数据收集')
-    parser.add_argument('code', help='股票代码')
-    parser.add_argument('--days', type=int, default=60, help='获取天数（默认60）')
-    parser.add_argument('--date', help='保存日期，格式 YYYY-MM-DD（默认今天）')
+    parser.add_argument('code', help='股票代码（如 600519, AAPL, 00700）')
+    parser.add_argument('--days', type=int, default=60, help='获取K线天数（默认60）')
+    parser.add_argument('--date', help='保存文件的日期标识，格式 YYYY-MM-DD（默认今天）')
     args = parser.parse_args()
 
     date_str = args.date or datetime.now().strftime('%Y-%m-%d')
 
-    result = collect_stock_data(args.code, args.days)
-    output_path = save_to_file(result, args.code, date_str)
+    try:
+        result = collect_stock_data(args.code, args.days)
+        output_path = save_to_file(result, args.code, date_str)
 
-    print(f"[保存] {output_path}", file=sys.stderr)
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(f"[保存] {output_path}", file=sys.stderr)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    except Exception as e:
+        print(f"[错误] {e}", file=sys.stderr)
+        sys.exit(1)
