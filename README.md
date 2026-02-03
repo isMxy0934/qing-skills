@@ -7,7 +7,7 @@
 | Skill | 描述 |
 |-------|------|
 | [data-collect](skills/data-collect) | 收集股票行情数据（K线、实时行情、筹码分布） |
-| [technical-analysis](skills/technical-analysis) | 技术分析（MA/MACD/RSI/KDJ） |
+| [technical-analysis](skills/technical-analysis) | 技术分析（已实现：MA/MACD/RSI；计划：KDJ） |
 | [ai-decision](skills/ai-decision) | AI 投资决策仪表盘 |
 
 ## 安装
