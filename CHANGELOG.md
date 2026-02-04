@@ -1,3 +1,11 @@
+## 0.4.0 - 2026-02-04
+
+### Features
+- Add release-skills for universal release workflow
+
+### Documentation
+- Update installation instructions to use npx skills
+
 ## 0.3.3 - 2026-02-03
 
 ### Documentation
