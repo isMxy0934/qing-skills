@@ -17,6 +17,14 @@ python scripts/decision.py 600519 --date 2025-01-01
 python scripts/decision.py 600519 --date 2025-01-01 --news "公司发布利好公告"
 ```
 
+## 输入（必需）
+
+需要先运行 `technical-analysis`，并确保 `--date` 一致。
+
+```
+output/<股票代码>/<日期>/analysis.json
+```
+
 ## 数据流
 
 ```
@@ -24,18 +32,31 @@ python scripts/decision.py 600519 --date 2025-01-01 --news "公司发布利好�
 输出: output/<股票代码>/<日期>/decision.json
 ```
 
+## 输出（稳定字段）
+
+- `core_conclusion`：一句话结论 + 信号类型 + 持仓建议
+- `price_levels`：买入/止损/止盈/盈亏比等关键价位
+- `checklist`：关键条件逐条检查
+- `summary`：最终动作、分数、置信度
+
 ## 完整流程
 
 ```bash
 # 1. 收集数据
-python data-collect/scripts/collect_stock_data.py 600519 --date 2025-01-01
+python skills/data-collect/scripts/collect_stock_data.py 600519 --date 2025-01-01
 
 # 2. 技术分析
-python technical-analysis/scripts/analyze.py 600519 --date 2025-01-01
+python skills/technical-analysis/scripts/analyze.py 600519 --date 2025-01-01
 
 # 3. 生成决策
 python scripts/decision.py 600519 --date 2025-01-01
 ```
+
+## 失败处理
+
+- 找不到 `analysis.json`：先运行 `technical-analysis`（同一个 `--date`）
+- `analysis.json` 字段缺失/格式异常：检查 `technical-analysis` 输出是否完整；必要时重跑分析
+- `--news` 缺省：不影响生成决策（只是不包含舆情相关结论）
 
 ## 输出内容
 
