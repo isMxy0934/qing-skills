@@ -310,6 +310,12 @@ def collect_stock_data(code: str, days: int = 60) -> dict:
     """统一数据收集入口"""
     market = identify_market(code)
 
+    if market == "未知":
+        raise ValueError(
+            f"不支持的股票代码/市场: {code}。"
+            "请检查代码格式，或参考 skills/data-collect/references/markets.md 的识别规则。"
+        )
+
     # 获取 K线数据
     if market == "美股":
         klines_df = fetch_us_stock_kline(code, days)
