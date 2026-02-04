@@ -4,15 +4,15 @@
 支持 A股/港股/美股/ETF
 
 用法:
-    python collect_stock_data.py <股票代码> [--days N] [--date YYYY-MM-DD]
+    python collect_stock_data.py <股票代码> [--days N] --date YYYY-MM-DD
 
 示例:
-    python collect_stock_data.py 600519                      # A股，60天
-    python collect_stock_data.py 000001 --days 90            # A股，90天
-    python collect_stock_data.py 00700 --days 30             # 港股，30天
-    python collect_stock_data.py AAPL --days 30              # 美股，30天
-    python collect_stock_data.py 512880                      # ETF，60天
-    python collect_stock_data.py 600519 --date 2025-01-01   # 指定保存日期
+    python collect_stock_data.py 600519 --date 2025-01-01                     # A股，60天
+    python collect_stock_data.py 000001 --days 90 --date 2025-01-01           # A股，90天
+    python collect_stock_data.py 00700 --days 30 --date 2025-01-01            # 港股，30天
+    python collect_stock_data.py AAPL --days 30 --date 2025-01-01             # 美股，30天
+    python collect_stock_data.py 512880 --date 2025-01-01                     # ETF，60天
+    python collect_stock_data.py 600519 --date 2025-01-01   # 指定保存日期（必填）
 """
 
 import re
@@ -415,10 +415,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='股票数据收集')
     parser.add_argument('code', help='股票代码（如 600519, AAPL, 00700）')
     parser.add_argument('--days', type=int, default=60, help='获取K线天数（默认60）')
-    parser.add_argument('--date', help='保存文件的日期标识，格式 YYYY-MM-DD（默认今天）')
+    parser.add_argument('--date', required=True, help='保存文件的日期标识，格式 YYYY-MM-DD（必填）')
     args = parser.parse_args()
 
-    date_str = args.date or datetime.now().strftime('%Y-%m-%d')
+    date_str = args.date
 
     try:
         result = collect_stock_data(args.code, args.days)

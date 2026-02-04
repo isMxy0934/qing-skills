@@ -10,17 +10,17 @@ description: 收集股票历史K线、实时行情、筹码分布数据，支持
 ## 执行命令
 
 ```bash
-python scripts/collect_stock_data.py <股票代码> [--days N] [--date YYYY-MM-DD]
+python scripts/collect_stock_data.py <股票代码> [--days N] --date YYYY-MM-DD
 
 # 示例
-python scripts/collect_stock_data.py 600519                      # A股，60天
-python scripts/collect_stock_data.py 000001 --days 90            # 指定90天
-python scripts/collect_stock_data.py AAPL --days 30              # 美股30天
+python scripts/collect_stock_data.py 600519 --date 2025-01-01                    # A股，60天
+python scripts/collect_stock_data.py 000001 --days 90 --date 2025-01-01          # 指定90天
+python scripts/collect_stock_data.py AAPL --days 30 --date 2025-01-01            # 美股30天
 ```
 
 **参数说明**：
 - `--days`：获取天数（默认60天）
-- `--date`：保存文件的日期标识（默认今天，不影响数据时间范围）
+- `--date`：保存文件的日期标识（必填，用于保证后续分析与决策可复现；不影响数据时间范围）
 
 ## 市场支持
 
@@ -44,6 +44,12 @@ output/<股票代码>/<日期>/data.json
 - `chip`：筹码分布（仅A股，获利比例、筹码集中度等）
 
 完整字段说明见 [fields.md](references/fields.md)
+
+## 失败处理
+
+- 股票代码无效/市场不支持：检查 `markets.md` 的识别规则
+- K 线数据拉取失败：脚本会自动切换数据源；如果仍失败，可能是网络/源站限制，稍后重试
+- 实时行情/筹码失败：会输出警告但不阻断（K 线仍会保存）
 
 ## 错误处理
 
