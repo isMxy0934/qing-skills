@@ -13,10 +13,18 @@
 ## 安装
 
 ```bash
-# 安装单个 skill
-claude skill add https://github.com/isMxy0934/qing-skills/skills/data-collect
-claude skill add https://github.com/isMxy0934/qing-skills/skills/technical-analysis
-claude skill add https://github.com/isMxy0934/qing-skills/skills/ai-decision
+# 安装（跨平台，安装整个技能集）
+npx skills add isMxy0934/qing-skills
+
+# 安装单个 skill（任选其一）
+npx skills add isMxy0934/qing-skills@data-collect
+npx skills add https://github.com/isMxy0934/qing-skills --skill data-collect
+
+# 检查更新
+npx skills check
+
+# 更新已安装 skills
+npx skills update
 ```
 
 ## 使用流程
