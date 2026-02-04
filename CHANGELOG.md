@@ -1,3 +1,8 @@
+## 1.0.2 - 2026-02-04
+
+### Documentation
+- release-skills: Mark skill as internal
+
 ## 1.0.1 - 2026-02-04
 
 ### Fixes
