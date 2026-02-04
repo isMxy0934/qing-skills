@@ -1,3 +1,13 @@
+## 1.0.1 - 2026-02-04
+
+### Fixes
+- data-collect: Add validation for unknown market codes with helpful error message
+- data-collect: Correct chip data field range documentation (percentage to 0~1)
+- technical-analysis: Add 'ok' field to indicate analysis success/failure status
+- technical-analysis: Improve error message with minimum data requirement
+- ai-decision: Add validation for technical-analysis output
+- ai-decision: Correct chip data field range in trading rules (percentage to 0~1)
+
 ## 1.0.0 - 2026-02-04
 
 ### Breaking Changes
