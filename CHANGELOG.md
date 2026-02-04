@@ -1,3 +1,15 @@
+## 1.0.0 - 2026-02-04
+
+### Breaking Changes
+- data-collect: --date parameter is now required (no default value)
+
+### Features
+- data-collect: --date parameter is now required to ensure reproducibility
+
+### Documentation
+- Add input/output field specifications and failure handling guide for ai-decision
+- Add input/output field specifications and failure handling guide for technical-analysis
+
 ## 0.4.0 - 2026-02-04
 
 ### Features
