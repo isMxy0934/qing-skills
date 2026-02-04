@@ -298,6 +298,14 @@ if __name__ == "__main__":
     with open(input_path, 'r', encoding='utf-8') as f:
         analysis = json.load(f)
 
+    if analysis.get('ok') is False or analysis.get('error'):
+        print(
+            f"[错误] technical-analysis 输出无效: {analysis.get('error', 'unknown error')}. "
+            f"请先修复上游分析并重跑 technical-analysis（code={args.code}, date={args.date}）。",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     # 执行决策
     result = ai_decision(analysis, news_context=args.news)
 
