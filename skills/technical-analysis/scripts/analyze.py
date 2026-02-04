@@ -493,7 +493,7 @@ def technical_analysis(stock_data: dict) -> dict:
     df = pd.DataFrame(klines)
 
     if len(df) < 20:
-        return {'error': '数据不足，无法进行趋势分析'}
+        return {'ok': False, 'error': '数据不足，无法进行趋势分析（至少需要 20 根K线）'}
 
     df['date'] = pd.to_datetime(df['date'])
     df = df.sort_values('date').reset_index(drop=True)
@@ -523,6 +523,7 @@ def technical_analysis(stock_data: dict) -> dict:
     signal = generate_signal(trend, bias, macd, rsi, volume, support)
 
     return {
+        'ok': True,
         'code': stock_data['code'],
         'name': stock_data.get('name', stock_data['code']),
         'market': stock_data.get('market', ''),
@@ -573,6 +574,10 @@ if __name__ == "__main__":
 
     # 执行分析
     result = technical_analysis(input_data)
+
+    if result.get('ok') is False or result.get('error'):
+        print(f"[错误] {result.get('error', '分析失败')}", file=sys.stderr)
+        sys.exit(1)
 
     # 保存结果
     output_dir = os.path.join(root, 'output', args.code, args.date)
