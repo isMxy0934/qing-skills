@@ -20,10 +20,11 @@
 | code | string | 股票代码 |
 | name | string | 股票名称（来自实时行情，失败时=code） |
 | market | string | 市场类型：A股/港股/美股/ETF |
-| source | string | 数据源标识（固定为 "akshare"） |
+| source | string | 数据源标识（"akshare" 或 "tushare"） |
 | update_time | string | 数据更新时间 |
 
 ---
+当使用 `--provider tushare` 时，`realtime` 与 `chip` 字段返回 `null`。
 
 ## klines（K线数据）
 

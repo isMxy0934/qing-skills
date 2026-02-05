@@ -4,7 +4,7 @@
 支持 A股/港股/美股/ETF
 
 用法:
-    python collect_stock_data.py <股票代码> [--days N] --date YYYY-MM-DD
+    python collect_stock_data.py <股票代码> [--days N] [--provider akshare|tushare] --date YYYY-MM-DD
 
 示例:
     python collect_stock_data.py 600519 --date 2025-01-01                     # A股，60天
@@ -12,6 +12,7 @@
     python collect_stock_data.py 00700 --days 30 --date 2025-01-01            # 港股，30天
     python collect_stock_data.py AAPL --days 30 --date 2025-01-01             # 美股，30天
     python collect_stock_data.py 512880 --date 2025-01-01                     # ETF，60天
+    python collect_stock_data.py 600519 --provider tushare --date 2025-01-01  # A股 tushare
     python collect_stock_data.py 600519 --date 2025-01-01   # 指定保存日期（必填）
 """
 
@@ -23,22 +24,13 @@ import sys
 import os
 from datetime import datetime, timedelta
 
-import akshare as ak
 import pandas as pd
+import akshare as ak
 
-
-# 禁用代理，akshare 访问国内数据源不需要代理
-os.environ['NO_PROXY'] = '*'
-os.environ['no_proxy'] = '*'
-if 'HTTP_PROXY' in os.environ:
-    del os.environ['HTTP_PROXY']
-if 'HTTPS_PROXY' in os.environ:
-    del os.environ['HTTPS_PROXY']
-if 'http_proxy' in os.environ:
-    del os.environ['http_proxy']
-if 'https_proxy' in os.environ:
-    del os.environ['https_proxy']
-
+try:
+    import tushare as ts
+except ImportError:
+    ts = None
 
 def random_sleep(min_sec: float = 2.0, max_sec: float = 5.0):
     """随机休眠，防止请求过快"""
@@ -77,11 +69,13 @@ def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
     """统一列名"""
     column_map = {
         '日期': 'date', 'date': 'date',
+        'trade_date': 'date',
         '开盘': 'open', 'open': 'open',
         '收盘': 'close', 'close': 'close',
         '最高': 'high', 'high': 'high',
         '最低': 'low', 'low': 'low',
         '成交量': 'volume', 'volume': 'volume',
+        'vol': 'volume',
         '成交额': 'amount', 'amount': 'amount',
         '涨跌幅': 'pct_chg', 'pct_chg': 'pct_chg',
     }
@@ -143,7 +137,7 @@ def _fetch_tencent(code: str, days: int) -> pd.DataFrame:
     return _normalize_columns(df)
 
 
-def fetch_a_stock_kline(code: str, days: int = 60) -> pd.DataFrame:
+def fetch_a_stock_kline_akshare(code: str, days: int = 60) -> pd.DataFrame:
     """获取 A股 K线数据，多数据源自动切换"""
     methods = [
         (_fetch_em, "东方财富"),
@@ -162,6 +156,45 @@ def fetch_a_stock_kline(code: str, days: int = 60) -> pd.DataFrame:
             print(f"[数据源] {source_name} 失败: {e}", file=sys.stderr)
 
     raise Exception("所有数据源均获取失败")
+
+
+def _to_tushare_ts_code(code: str) -> str:
+    """A股代码转换为 tushare ts_code"""
+    if not code.isdigit() or len(code) != 6:
+        raise ValueError("tushare 目前仅支持 6 位 A 股代码")
+    suffix = "SH" if code.startswith(('5', '6', '9')) else "SZ"
+    return f"{code}.{suffix}"
+
+
+def fetch_a_stock_kline_tushare(code: str, days: int = 60) -> pd.DataFrame:
+    """通过 tushare 获取 A股 K线数据"""
+    if ts is None:
+        raise ImportError("未安装 tushare，请先执行: pip install tushare")
+
+    token = os.environ.get("TUSHARE_TOKEN", "").strip()
+    if not token:
+        raise ValueError("缺少 TUSHARE_TOKEN 环境变量，无法使用 tushare 数据源")
+
+    ts.set_token(token)
+    ts_code = _to_tushare_ts_code(code)
+
+    end = datetime.now()
+    start = end - timedelta(days=days)
+    random_sleep()
+    df = ts.pro_bar(
+        ts_code=ts_code,
+        start_date=start.strftime('%Y%m%d'),
+        end_date=end.strftime('%Y%m%d'),
+        freq='D',
+        adj='qfq'
+    )
+    if df is None or df.empty:
+        raise Exception("tushare 返回空数据")
+
+    df = _normalize_columns(df)
+    df['date'] = pd.to_datetime(df['date'], format='%Y%m%d')
+    df = df.sort_values('date').reset_index(drop=True)
+    return df
 
 
 # === 港股数据 ===
@@ -306,8 +339,12 @@ def fetch_chip_distribution(code: str) -> dict:
 
 
 # === 统一入口 ===
-def collect_stock_data(code: str, days: int = 60) -> dict:
+def collect_stock_data(code: str, days: int = 60, provider: str = "akshare") -> dict:
     """统一数据收集入口"""
+    provider = provider.strip().lower()
+    if provider not in ("akshare", "tushare"):
+        raise ValueError("provider 仅支持: akshare, tushare")
+
     market = identify_market(code)
 
     if market == "未知":
@@ -317,14 +354,19 @@ def collect_stock_data(code: str, days: int = 60) -> dict:
         )
 
     # 获取 K线数据
-    if market == "美股":
-        klines_df = fetch_us_stock_kline(code, days)
-    elif market == "港股":
-        klines_df = fetch_hk_stock_kline(code, days)
-    elif market == "ETF":
-        klines_df = fetch_etf_kline(code, days)
+    if provider == "tushare":
+        if market != "A股":
+            raise ValueError("tushare 目前仅支持 A 股 K 线，请改用 --provider akshare")
+        klines_df = fetch_a_stock_kline_tushare(code, days)
     else:
-        klines_df = fetch_a_stock_kline(code, days)
+        if market == "美股":
+            klines_df = fetch_us_stock_kline(code, days)
+        elif market == "港股":
+            klines_df = fetch_hk_stock_kline(code, days)
+        elif market == "ETF":
+            klines_df = fetch_etf_kline(code, days)
+        else:
+            klines_df = fetch_a_stock_kline_akshare(code, days)
 
     # 转换为列表格式
     klines = []
@@ -362,21 +404,22 @@ def collect_stock_data(code: str, days: int = 60) -> dict:
 
     # 获取实时行情（可选，失败不影响主流程）
     realtime = None
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            realtime = fetch_realtime_quote(code, market)
-            break
-        except Exception as e:
-            if attempt < max_retries - 1:
-                print(f"[警告] 实时行情获取失败(尝试 {attempt + 1}/{max_retries}): {e}", file=sys.stderr)
-                time.sleep(2)
-            else:
-                print(f"[警告] 实时行情获取失败，已重试 {max_retries} 次: {e}", file=sys.stderr)
+    if provider == "akshare":
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                realtime = fetch_realtime_quote(code, market)
+                break
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    print(f"[警告] 实时行情获取失败(尝试 {attempt + 1}/{max_retries}): {e}", file=sys.stderr)
+                    time.sleep(2)
+                else:
+                    print(f"[警告] 实时行情获取失败，已重试 {max_retries} 次: {e}", file=sys.stderr)
 
     # 获取筹码分布（仅 A股，可选）
     chip = None
-    if market == "A股":
+    if provider == "akshare" and market == "A股":
         try:
             chip = fetch_chip_distribution(code)
         except Exception as e:
@@ -386,7 +429,7 @@ def collect_stock_data(code: str, days: int = 60) -> dict:
         'code': code,
         'name': realtime.get('name', code) if realtime else code,
         'market': market,
-        'source': 'akshare',
+        'source': provider,
         'update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'klines': klines,
         'realtime': realtime,
@@ -421,13 +464,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='股票数据收集')
     parser.add_argument('code', help='股票代码（如 600519, AAPL, 00700）')
     parser.add_argument('--days', type=int, default=60, help='获取K线天数（默认60）')
+    parser.add_argument(
+        '--provider',
+        default='akshare',
+        choices=['akshare', 'tushare'],
+        help='数据源（默认 akshare；仅当用户选择时使用 tushare）'
+    )
     parser.add_argument('--date', required=True, help='保存文件的日期标识，格式 YYYY-MM-DD（必填）')
     args = parser.parse_args()
 
     date_str = args.date
 
     try:
-        result = collect_stock_data(args.code, args.days)
+        result = collect_stock_data(args.code, args.days, args.provider)
         output_path = save_to_file(result, args.code, date_str)
 
         print(f"[保存] {output_path}", file=sys.stderr)

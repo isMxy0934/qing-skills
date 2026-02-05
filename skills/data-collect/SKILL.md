@@ -10,17 +10,24 @@ description: 收集股票历史K线、实时行情、筹码分布数据，支持
 ## 执行命令
 
 ```bash
-python scripts/collect_stock_data.py <股票代码> [--days N] --date YYYY-MM-DD
+python scripts/collect_stock_data.py <股票代码> [--days N] [--provider akshare|tushare] --date YYYY-MM-DD
 
 # 示例
 python scripts/collect_stock_data.py 600519 --date 2025-01-01                    # A股，60天
 python scripts/collect_stock_data.py 000001 --days 90 --date 2025-01-01          # 指定90天
 python scripts/collect_stock_data.py AAPL --days 30 --date 2025-01-01            # 美股30天
+python scripts/collect_stock_data.py 600519 --provider tushare --date 2025-01-01 # 用户选择 tushare
 ```
 
 **参数说明**：
 - `--days`：获取天数（默认60天）
+- `--provider`：数据源（默认 `akshare`；仅用户选择时使用 `tushare`）
 - `--date`：保存文件的日期标识（必填，用于保证后续分析与决策可复现；不影响数据时间范围）
+
+当 `--provider tushare` 时：
+- 当前仅支持 **A股 K线**
+- 需要设置环境变量 `TUSHARE_TOKEN`
+- `realtime` 与 `chip` 字段会返回 `null`
 
 ## 市场支持
 
@@ -62,5 +69,5 @@ output/<股票代码>/<日期>/data.json
 ## 依赖安装
 
 ```bash
-pip install akshare pandas
+pip install akshare tushare pandas
 ```

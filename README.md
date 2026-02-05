@@ -38,8 +38,10 @@ npx skills update
 ## 依赖
 
 ```bash
-pip install akshare pandas
+pip install akshare tushare pandas
 ```
+
+`data-collect` 默认使用 `akshare`，需要时可通过 `--provider tushare` 切换到 `tushare`（目前用于 A 股 K 线，需设置 `TUSHARE_TOKEN`）。
 
 ## License
 
