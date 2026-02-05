@@ -1,3 +1,9 @@
+## 1.1.0 - 2026-02-05
+
+### Features
+- data-collect: add optional tushare provider for A-share K-lines (requires TUSHARE_TOKEN)
+- skill-enhancement: add v2 plan for enhanced indicators and a Markdown dashboard
+
 ## 1.0.2 - 2026-02-04
 
 ### Documentation

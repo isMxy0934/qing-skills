@@ -1,3 +1,9 @@
+## 1.1.0 - 2026-02-05
+
+### 新功能
+- data-collect: 新增 tushare 数据源选项（A 股 K 线，需 TUSHARE_TOKEN）
+- skill-enhancement: 新增 v2 方案，包含增强指标与 Markdown 仪表盘
+
 ## 1.0.2 - 2026-02-04
 
 ### 文档
