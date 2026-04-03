@@ -1,3 +1,12 @@
+## 1.2.0 - 2026-04-03
+
+### Features
+- a-share-stock-picker: Multi-horizon A-share analysis skill with data scripts, watchlists, reports, and T+1 tail workflow
+- skill-create: Cursor skill compliance audit guide for reviewing SKILL structure and frontmatter
+
+### Documentation
+- project: List new skills in README; bundle release-skills under `.agents/skills/` for agent workflows
+
 ## 1.1.0 - 2026-02-05
 
 ### Features

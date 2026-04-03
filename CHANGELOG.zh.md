@@ -1,3 +1,12 @@
+## 1.2.0 - 2026-04-03
+
+### 新功能
+- a-share-stock-picker: A 股多周期选股与分析技能，含数据采集脚本、自选池、报告与 T+1 尾盘流程
+- skill-create: 符合 Cursor 技能规范的审查指南（结构、frontmatter、渐进式披露）
+
+### 文档
+- project: README 补充新技能说明；在 `.agents/skills/` 下提供 release-skills 副本供 Agent 使用
+
 ## 1.1.0 - 2026-02-05
 
 ### 新功能
