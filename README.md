@@ -9,6 +9,8 @@
 | [data-collect](skills/data-collect) | 收集股票行情数据（K线、实时行情、筹码分布） |
 | [technical-analysis](skills/technical-analysis) | 技术分析（已实现：MA/MACD/RSI；计划：KDJ） |
 | [ai-decision](skills/ai-decision) | AI 投资决策仪表盘 |
+| [a-share-stock-picker](skills/a-share-stock-picker) | A 股多周期选股与分析（自选池、报告、T+1 尾盘） |
+| [skill-create](skills/skill-create) | 审查技能是否符合 Cursor 技能编写规范 |
 
 ## 安装
 
