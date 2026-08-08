@@ -1,3 +1,14 @@
+## 2.0.0 - 2026-08-08
+
+### 破坏性变更
+- 从公开技能集中移除 a-share-stock-picker、ai-decision、data-collect、skill-create 和 technical-analysis
+
+### 新功能
+- track-ai-plans：新增 Git 支持的 V2 计划生命周期，包含依赖感知的任务跟踪、验证证据、精确文件变更覆盖、审计事件与只读仪表盘
+
+### 文档
+- project：更新 track-ai-plans 的技能目录、安装示例、用法与依赖说明
+
 ## 1.2.0 - 2026-04-03
 
 ### 新功能

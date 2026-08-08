@@ -1,3 +1,14 @@
+## 2.0.0 - 2026-08-08
+
+### Breaking Changes
+- Remove the a-share-stock-picker, ai-decision, data-collect, skill-create, and technical-analysis skills from the public collection
+
+### Features
+- track-ai-plans: Add a Git-backed V2 plan lifecycle with dependency-aware work tracking, verification evidence, exact file-change coverage, audit events, and a read-only dashboard
+
+### Documentation
+- project: Update the skill catalog, installation examples, usage, and dependencies for track-ai-plans
+
 ## 1.2.0 - 2026-04-03
 
 ### Features
