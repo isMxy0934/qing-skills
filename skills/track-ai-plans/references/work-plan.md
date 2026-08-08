@@ -2,7 +2,7 @@
 
 1. Run `show`. Work only when the registry state is `active`.
 2. Read `nextActions`; start only an item whose readiness is `ready`.
-3. Mark it `in-progress` before substantial implementation. V2 permits only one item in progress.
+3. Mark it `in-progress` before substantial implementation. Keep only one item in progress.
 4. Perform the repository work. Git, not the agent's file report, remains the source of observed changes.
 5. If scope grows, register the path with `update-item --file`. Supplying an existing path replaces its expected action, so an incorrect declaration can be fixed.
 6. Record done evidence and `verifiedBy`, or stop with a failed/blocked reason.

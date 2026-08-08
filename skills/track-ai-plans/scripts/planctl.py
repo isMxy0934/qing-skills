@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic state manager for the track-ai-plans V2 skill."""
+"""Deterministic state manager for the track-ai-plans skill."""
 
 from __future__ import annotations
 
@@ -19,12 +19,13 @@ from pathlib import Path
 
 try:
     import fcntl
-except ImportError:  # pragma: no cover - V2 currently targets Codex's Unix runtimes.
+except ImportError:  # pragma: no cover - The skill currently targets Codex's Unix runtimes.
     fcntl = None
 
 
-INDEX_SCHEMA_VERSION = 2
-PLAN_SCHEMA_VERSION = 2
+SCHEMA_VERSION = 1
+INDEX_SCHEMA_VERSION = SCHEMA_VERSION
+PLAN_SCHEMA_VERSION = SCHEMA_VERSION
 PLAN_STATES = {"draft", "active", "paused", "completed", "cancelled"}
 CURRENT_STATES = {"active", "paused"}
 TERMINAL_STATES = {"completed", "cancelled"}
@@ -180,7 +181,7 @@ def event(root: Path, slug: str, event_type: str, actor: str, actor_type: str, d
     token = uuid.uuid4().hex[:8]
     safe_time = timestamp.replace(":", "-")
     payload = {
-        "schemaVersion": 2,
+        "schemaVersion": SCHEMA_VERSION,
         "eventId": f"{safe_time}-{event_type}-{token}",
         "occurredAt": timestamp,
         "type": event_type,
@@ -630,7 +631,7 @@ def status_projection(entry: dict, plan: dict, root: Path) -> dict:
     for issue in [*open_issues, *derived_issues]:
         next_actions.append({"type": "issue", "id": issue["id"], "title": issue["title"], "reason": issue.get("nextAction", "")})
     return {
-        "schemaVersion": 2,
+        "schemaVersion": SCHEMA_VERSION,
         "generatedAt": now(),
         "plan": {
             "slug": entry["slug"],

@@ -5,11 +5,11 @@ description: Create, execute, verify, pause, resume, replace, complete, and summ
 
 # Track AI Plans
 
-Use a repository-local V2 plan store to answer: what is current, what was intended, what changed, what is verified, and what stops the work.
+Use a repository-local plan store to answer: what is current, what was intended, what changed, what is verified, and what stops the work.
 
 ## Preflight
 
-1. Treat the Git top-level as `ROOT`; V2 refuses activation from a subdirectory or a repository without an initial commit.
+1. Treat the Git top-level as `ROOT`; refuse activation from a subdirectory or a repository without an initial commit.
 2. Run `python3 scripts/planctl.py --root ROOT validate` before changing an existing store.
 3. Run `python3 scripts/planctl.py --root ROOT show` before continuing current work.
 4. Report the current plan, current item, completed count, open problems, and next actionable item before substantial changes.
@@ -22,7 +22,7 @@ Use a repository-local V2 plan store to answer: what is current, what was intend
 - Pause, resume, complete, cancel, or replace: read [references/plan-lifecycle.md](references/plan-lifecycle.md).
 - Diagnose stored JSON: read [references/schema.md](references/schema.md).
 
-## V2 invariants
+## Core invariants
 
 - `plans/index.json` is the only lifecycle registry. It owns every plan's state, baseline, and `currentPlanSlug`; do not duplicate those fields in `plan.json`.
 - Keep at most one current plan. Both `active` and `paused` occupy `currentPlanSlug`; pausing does not make room for another resumable plan.

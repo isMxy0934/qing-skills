@@ -1,4 +1,4 @@
-# Manage the V2 lifecycle
+# Manage the plan lifecycle
 
 Every lifecycle command requires a reason and `--actor-type human`.
 
@@ -43,4 +43,4 @@ python3 scripts/planctl.py --root ROOT switch \
   --actor-type human
 ```
 
-V2 intentionally does not support switching away from a paused plan and later resuming it in the same worktree. Use separate Git worktrees for resumable parallel execution.
+The plan manager intentionally does not support switching away from a paused plan and later resuming it in the same worktree. Use separate Git worktrees for resumable parallel execution.

@@ -1,6 +1,6 @@
-# V2 storage schema
+# Storage schema
 
-V2 separates lifecycle registry, declared plan content, observed status, and audit events.
+The storage model separates lifecycle registry, declared plan content, observed status, and audit events.
 
 ## Layout
 
@@ -21,7 +21,7 @@ plans/
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 1,
   "revision": 12,
   "currentPlanSlug": "dashboard-migration",
   "updatedAt": "ISO-8601",
@@ -49,7 +49,7 @@ States are `draft`, `active`, `paused`, `completed`, and `cancelled`. Exactly on
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 1,
   "slug": "dashboard-migration",
   "goal": "Move dashboard writes to one command path",
   "owner": "joy.mu",

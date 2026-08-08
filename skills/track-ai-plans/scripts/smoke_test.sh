@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# V2 regression test: authoritative registry, clean activation baseline,
+# Regression test: authoritative registry, clean activation baseline,
 # dependency/state guards, exact Git actions, completion gates, frozen terminal
 # status, event history, and paused-plan slot ownership.
 set -euo pipefail
@@ -36,19 +36,21 @@ mkdir -p "$WORKDIR/packages/contracts" "$WORKDIR/apps/service" "$WORKDIR/docs/ar
 git -C "$WORKDIR" init -q
 git -C "$WORKDIR" config user.email t@example.com
 git -C "$WORKDIR" config user.name t
-printf 'v0\n' > "$WORKDIR/packages/contracts/command.ts"
+printf 'baseline\n' > "$WORKDIR/packages/contracts/command.ts"
 git -C "$WORKDIR" add packages/contracts/command.ts
 git -C "$WORKDIR" commit -qm baseline
 
 # Draft creation does not capture a baseline or occupy the current slot.
-P create --slug demo-plan --name "Demo plan" --goal "exercise V2" --owner tester \
+P create --slug demo-plan --name "Demo plan" --goal "exercise plan tracking" --owner tester \
   --doc-mode required --doc-coverage all \
   --doc-target "docs/architecture/**:sync architecture" \
   --doc-target "docs/implementation/**:sync implementation" >/dev/null
+SCHEMA_VERSIONS="$(python3 -c "import glob,json;paths=['$WORKDIR/plans/index.json','$WORKDIR/plans/demo-plan/plan.json','$WORKDIR/plans/demo-plan/status.json',glob.glob('$WORKDIR/plans/demo-plan/events/*.json')[0]];print(' / '.join(str(json.load(open(p))['schemaVersion']) for p in paths))")"
+check "all stored artifacts start at schema version one" "$SCHEMA_VERSIONS" "1 / 1 / 1 / 1"
 INDEX_DRAFT="$(python3 -c "import json;d=json.load(open('$WORKDIR/plans/index.json'));e=d['plans'][0];print(str(d['currentPlanSlug'])+' / '+str(e['baselineCommit'])+' / '+e['state'])")"
 check "draft has no current slot or baseline" "$INDEX_DRAFT" "None / None / draft"
 
-P add-phase --plan demo-plan --id ph1 --title "Phase one" --purpose "prove V2" >/dev/null
+P add-phase --plan demo-plan --id ph1 --title "Phase one" --purpose "prove plan tracking" >/dev/null
 expect_die "item requires file-impact declaration" \
   P add-item --plan demo-plan --phase ph1 --id invalid --title Invalid --purpose invalid --verify-kind test
 expect_die "item requires verification kind" \
@@ -78,7 +80,7 @@ check "activation owns slot and captures baseline" "$CURRENT" "demo-plan / activ
 expect_die "child cannot pass before dependency" \
   P verify --item i2 --result pass --evidence premature --verified-by script
 
-printf 'v1\n' > "$WORKDIR/packages/contracts/command.ts"
+printf 'updated\n' > "$WORKDIR/packages/contracts/command.ts"
 P verify --item i1 --result pass --evidence "contract test passed" --verified-by script >/dev/null
 
 # Off-plan changes are current-plan local and clear only when this plan claims them.
