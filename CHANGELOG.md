@@ -1,10 +1,18 @@
+## 3.0.0 - 2026-08-08
+
+### Breaking Changes
+- track-ai-plans: Reset persisted plan artifacts from schema version 2 to schema version 1; existing schema-2 stores are rejected
+
+### Refactor
+- track-ai-plans: Remove V2 branding from skill instructions, lifecycle documentation, agent metadata, implementation comments, and regression fixtures
+
 ## 2.0.0 - 2026-08-08
 
 ### Breaking Changes
 - Remove the a-share-stock-picker, ai-decision, data-collect, skill-create, and technical-analysis skills from the public collection
 
 ### Features
-- track-ai-plans: Add a Git-backed V2 plan lifecycle with dependency-aware work tracking, verification evidence, exact file-change coverage, audit events, and a read-only dashboard
+- track-ai-plans: Add a Git-backed plan lifecycle with dependency-aware work tracking, verification evidence, exact file-change coverage, audit events, and a read-only dashboard
 
 ### Documentation
 - project: Update the skill catalog, installation examples, usage, and dependencies for track-ai-plans
