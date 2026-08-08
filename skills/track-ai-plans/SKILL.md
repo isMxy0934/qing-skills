@@ -22,6 +22,10 @@ Use a repository-local plan store to answer: what is current, what was intended,
 - Pause, resume, complete, cancel, or replace: read [references/plan-lifecycle.md](references/plan-lifecycle.md).
 - Diagnose stored JSON: read [references/schema.md](references/schema.md).
 
+## Write in the user's language
+
+Every stored text field — plan `--goal`, item `--title`/`--purpose`, `--evidence`/`--reason`, issue `--title`/`--detail`/`--next-action` — is content you author, not tool output. Write it in the language the user is using in conversation. The examples throughout this skill's reference files are in English only so the skill itself stays portable to read; they are not a template for what language to write plan content in. A dashboard mixing the user's language in its labels with English in every item's title reads as two systems stitched together — keep the content language consistent with what the user actually speaks.
+
 ## Core invariants
 
 - `plans/index.json` is the only lifecycle registry. It owns every plan's state, baseline, and `currentPlanSlug`; do not duplicate those fields in `plan.json`.
