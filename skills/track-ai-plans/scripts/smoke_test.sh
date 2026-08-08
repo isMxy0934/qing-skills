@@ -125,6 +125,12 @@ check "create does not overwrite an existing dashboard" \
 P install-dashboard >/dev/null
 check "install-dashboard forces a refresh" \
   "$(grep -c 'local marker' "$WORKDIR/plan-dashboard.html")" "0"
+
+# --root pointed at a single plan's own directory must be rejected, not
+# silently accepted as if it were the repository root.
+expect_die "--root inside a plan's own directory is rejected" \
+  python3 "$PLANCTL" --root "$WORKDIR/plans/demo-plan" show
+
 P transition --state paused --reason waiting --actor-type human >/dev/null
 PAUSED="$(python3 -c "import json;d=json.load(open('$WORKDIR/plans/index.json'));print(d['currentPlanSlug']+' / '+d['plans'][0]['state'])")"
 check "paused plan retains current slot" "$PAUSED" "demo-plan / paused"

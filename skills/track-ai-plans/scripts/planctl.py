@@ -91,6 +91,24 @@ def plans_dir(root: Path) -> Path:
     return root / "plans"
 
 
+def reject_root_inside_plan_dir(root: Path) -> None:
+    """--root must be the repository root, not one plan's own directory.
+
+    plan-dashboard.html and every relative path inside it are resolved
+    against --root, so pointing --root at plans/<slug>/ makes every fetch
+    look for a second, nested plans/ tree next to that single plan and
+    silently fail. A directory whose parent is literally named "plans" and
+    which itself holds a plan.json is, in practice, always exactly that
+    mistake — this tool is the only thing that creates directories shaped
+    that way.
+    """
+    if root.parent.name == "plans" and (root / "plan.json").exists():
+        die(
+            f"--root ({root}) looks like a single plan's own directory, not the repository root. "
+            f"Point --root at {root.parent.parent} instead."
+        )
+
+
 def index_path(root: Path) -> Path:
     return plans_dir(root) / "index.json"
 
@@ -1197,6 +1215,7 @@ def main() -> int:
     args = parser.parse_args()
     root = Path(args.root).expanduser().resolve()
     try:
+        reject_root_inside_plan_dir(root)
         if args.command in MUTATING_COMMANDS:
             with repository_lock(root):
                 result = args.handler(args, root)
