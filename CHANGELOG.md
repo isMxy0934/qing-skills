@@ -1,3 +1,12 @@
+## 3.1.0 - 2026-08-08
+
+### Features
+- track-ai-plans: Install the read-only dashboard automatically on first plan creation without overwriting an existing copy; keep `install-dashboard` as the explicit refresh command
+
+### Documentation
+- track-ai-plans: Explain Git-backed cross-device plan visibility, milestone commits, dashboard serving, and reconciliation of off-plan or mismatched changes
+- track-ai-plans: Keep user-authored plan, evidence, and issue text consistent with the user's conversation language
+
 ## 3.0.0 - 2026-08-08
 
 ### Breaking Changes
