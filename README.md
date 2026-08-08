@@ -6,7 +6,7 @@ AI 工作流 Codex Skills 集合。
 
 | Skill | 描述 |
 |-------|------|
-| [track-ai-plans](skills/track-ai-plans) | 在 Git 仓库中创建、执行、验证并跟踪可持久的 AI 工作计划 |
+| [track-ai-plans](skills/track-ai-plans) | 在 Git 仓库中创建、执行、验证并通过自动安装的只读仪表盘跟踪 AI 工作计划 |
 
 ## 安装
 

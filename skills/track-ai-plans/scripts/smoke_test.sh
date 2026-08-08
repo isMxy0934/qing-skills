@@ -49,6 +49,7 @@ SCHEMA_VERSIONS="$(python3 -c "import glob,json;paths=['$WORKDIR/plans/index.jso
 check "all stored artifacts start at schema version one" "$SCHEMA_VERSIONS" "1 / 1 / 1 / 1"
 INDEX_DRAFT="$(python3 -c "import json;d=json.load(open('$WORKDIR/plans/index.json'));e=d['plans'][0];print(str(d['currentPlanSlug'])+' / '+str(e['baselineCommit'])+' / '+e['state'])")"
 check "draft has no current slot or baseline" "$INDEX_DRAFT" "None / None / draft"
+check "create installs the dashboard automatically" "$(test -f "$WORKDIR/plan-dashboard.html" && echo yes || echo no)" "yes"
 
 P add-phase --plan demo-plan --id ph1 --title "Phase one" --purpose "prove plan tracking" >/dev/null
 expect_die "item requires file-impact declaration" \
@@ -114,8 +115,16 @@ touch "$WORKDIR/marker.txt"
 PLANNED_CLEAR="$(P show | python3 -c "import json,sys;d=json.load(sys.stdin);print(sum(i['type']=='planned-file-mismatch' for i in d['derivedIssues']))")"
 check "planned-file issues clear when observations match" "$PLANNED_CLEAR" "0"
 
+# A later create must not clobber a dashboard the user or a newer skill version already placed.
+echo "<!-- local marker -->" >> "$WORKDIR/plan-dashboard.html"
+
 # A paused plan keeps the current slot, so another draft cannot activate.
 P create --slug rival-plan --name Rival --goal rival >/dev/null
+check "create does not overwrite an existing dashboard" \
+  "$(grep -c 'local marker' "$WORKDIR/plan-dashboard.html")" "1"
+P install-dashboard >/dev/null
+check "install-dashboard forces a refresh" \
+  "$(grep -c 'local marker' "$WORKDIR/plan-dashboard.html")" "0"
 P transition --state paused --reason waiting --actor-type human >/dev/null
 PAUSED="$(python3 -c "import json;d=json.load(open('$WORKDIR/plans/index.json'));print(d['currentPlanSlug']+' / '+d['plans'][0]['state'])")"
 check "paused plan retains current slot" "$PAUSED" "demo-plan / paused"

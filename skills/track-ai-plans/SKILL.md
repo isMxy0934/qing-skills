@@ -37,9 +37,13 @@ Use a repository-local plan store to answer: what is current, what was intended,
 - Use `switch` only to terminate the current plan and activate a clean draft atomically. Use separate Git worktrees if resumable plans must execute in parallel.
 - Use `planctl.py` for every mutation. It holds `plans/.planctl.lock`, writes an event, updates the authoritative registry, and refreshes only the affected status snapshots.
 
+## Keep the store in Git
+
+Track `plans/` and `plan-dashboard.html` — this is what makes the current plan and its progress visible from any device, not just the one that ran the last command. Commit at milestones (plan creation/activation before writing code, each phase completion, plan completion/pause/cancel/replacement) and always before switching devices or ending a session, even if the current item is not done — an item marked `in-progress` only locally is invisible everywhere else, and the single-in-progress-item guarantee ([Core invariants](#core-invariants)) is enforced against the local file, not across devices.
+
 ## Dashboard
 
-Install once with `python3 scripts/planctl.py --root ROOT install-dashboard`, serve the repository over HTTP, and open `plan-dashboard.html`. The dashboard is read-only and reads the authoritative registry plus generated/frozen status files. Its task section can switch between a list and a Plan DAG derived directly from each item's `dependsOn`; the graph is never stored as separate plan state.
+`create` installs `plan-dashboard.html` automatically the first time (never overwrites an existing copy). Run `python3 scripts/planctl.py --root ROOT install-dashboard` only to force a refresh, for example after upgrading this skill to pick up a newer bundled dashboard. Serve the repository over HTTP and open `plan-dashboard.html` — a bare `file://` open cannot fetch the JSON it reads. The dashboard is read-only and reads the authoritative registry plus generated/frozen status files. Its task section can switch between a list and a Plan DAG derived directly from each item's `dependsOn`; the graph is never stored as separate plan state.
 
 ## Report back
 

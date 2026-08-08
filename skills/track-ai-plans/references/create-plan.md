@@ -1,12 +1,13 @@
 # Create and activate a plan
 
 1. Inspect the requested work and choose a 3-64 character lowercase slug.
-2. Create a draft before implementation. Draft creation records intent but does not capture a Git baseline.
+2. Create a draft before implementation. Draft creation records intent but does not capture a Git baseline; it also installs `plan-dashboard.html` if this is the first plan in the repository.
 3. Add phases in execution order.
 4. Add small items with purpose, dependencies, exact planned files, and a verification kind. Use `--no-file-impact` only when success genuinely requires no repository file change.
 5. Declare documentation impact.
 6. Validate and show the draft.
 7. After the user approves activation, ensure Git is clean and transition the draft to `active`. Activation captures the current `HEAD` as the fixed baseline.
+8. Commit `plans/` (and `plan-dashboard.html`, if this activation just installed it) before writing any code. This is the durable line between what was planned and what actually happened, and it is what makes the plan visible from another device.
 
 ```bash
 python3 scripts/planctl.py --root ROOT create \

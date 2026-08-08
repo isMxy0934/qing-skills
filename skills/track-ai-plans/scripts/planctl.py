@@ -750,6 +750,7 @@ def cmd_create(args: argparse.Namespace, root: Path) -> dict:
     if state == "active":
         index["currentPlanSlug"] = args.slug
     save_index(root, index)
+    install_dashboard(root, overwrite=False)
     event(root, args.slug, "plan-created", args.actor, args.actor_type, {"state": state, "goal": args.goal})
     return render_status(root, entry, plan)
 
@@ -1042,10 +1043,16 @@ def cmd_history(args: argparse.Namespace, root: Path) -> dict:
     return {"planSlug": entry["slug"], "events": events}
 
 
-def cmd_install_dashboard(args: argparse.Namespace, root: Path) -> dict:
+def install_dashboard(root: Path, *, overwrite: bool) -> Path:
     source = Path(__file__).resolve().parents[1] / "assets" / "dashboard.html"
     target = root / "plan-dashboard.html"
-    shutil.copyfile(source, target)
+    if overwrite or not target.exists():
+        shutil.copyfile(source, target)
+    return target
+
+
+def cmd_install_dashboard(args: argparse.Namespace, root: Path) -> dict:
+    target = install_dashboard(root, overwrite=True)
     return {"installed": str(target)}
 
 
