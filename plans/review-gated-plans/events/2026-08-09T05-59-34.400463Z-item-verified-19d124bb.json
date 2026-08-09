@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "eventId": "2026-08-09T05-59-34.400463Z-item-verified-19d124bb",
+  "occurredAt": "2026-08-09T05:59:34.400463Z",
+  "type": "item-verified",
+  "planSlug": "review-gated-plans",
+  "actor": "documentation-implementer",
+  "actorType": "agent",
+  "details": {
+    "itemId": "governance-docs",
+    "result": "pass",
+    "evidence": "README 与生命周期文档已说明计划审查、阶段审查、失败重审和 switch 的门禁；smoke_test 59 项通过。"
+  }
+}

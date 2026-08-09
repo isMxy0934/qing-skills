@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-09T05:58:38.705568Z",
+  "generatedAt": "2026-08-09T05:59:34.439368Z",
   "plan": {
     "slug": "review-gated-plans",
     "name": "移动端仪表盘与审查门禁",
@@ -12,58 +12,56 @@
     "currentPhaseId": "governance",
     "baselineCommit": "02113f0ea4fe606454b534821a0e9ef52eae313f",
     "replacedBy": null,
-    "updatedAt": "2026-08-09T05:58:38.664303Z"
+    "updatedAt": "2026-08-09T05:59:34.400939Z"
   },
   "execution": {
     "state": "idle",
     "currentItemId": null,
-    "lastCompletedItemId": "phase-review-gate",
+    "lastCompletedItemId": "governance-docs",
     "stopReason": null,
-    "updatedAt": "2026-08-09T05:58:38.663819Z"
+    "updatedAt": "2026-08-09T05:59:34.400459Z"
   },
   "summary": {
     "total": 5,
     "status": {
-      "failed": 0,
       "in-progress": 0,
+      "failed": 0,
+      "not-started": 0,
       "blocked": 0,
-      "done": 4,
-      "not-started": 1
+      "done": 5
     },
     "readiness": {
-      "ready": 1,
+      "ready": 0,
       "blocked": 0,
       "in-progress": 0,
-      "done": 4,
+      "done": 5,
       "failed": 0
     },
     "verifiedBy": {
-      "llm": 3,
-      "human": 0,
+      "llm": 4,
       "script": 1,
-      "unverified": 1
+      "human": 0,
+      "unverified": 0
     },
-    "openIssues": 1
+    "openIssues": 0
   },
   "changeCoverage": {
     "planned": 17,
-    "observed": 15,
-    "pending": 2,
+    "observed": 17,
+    "pending": 0,
     "mismatched": 0,
     "unexpected": 0,
     "offPlanChanges": []
   },
   "documentationImpact": {
-    "status": "fail",
+    "status": "pass",
     "mode": "required",
     "coverage": "all",
-    "matchedTargets": 1,
+    "matchedTargets": 2,
     "totalTargets": 2,
-    "missingTargets": [
-      "README.md"
-    ],
-    "completionBlocked": true,
-    "message": "缺少覆盖: README.md"
+    "missingTargets": [],
+    "completionBlocked": false,
+    "message": "所有声明的文档范围都已覆盖"
   },
   "phases": [
     {
@@ -178,11 +176,11 @@
       "counts": {
         "total": 2,
         "status": {
-          "failed": 0,
           "in-progress": 0,
+          "failed": 0,
+          "not-started": 0,
           "blocked": 0,
-          "done": 2,
-          "not-started": 0
+          "done": 2
         }
       }
     },
@@ -384,10 +382,10 @@
           "dependsOn": [
             "phase-review-gate"
           ],
-          "status": "not-started",
+          "status": "done",
           "verifyKind": "llm-review",
-          "verifiedBy": "unverified",
-          "evidence": null,
+          "verifiedBy": "llm",
+          "evidence": "README 与生命周期文档已说明计划审查、阶段审查、失败重审和 switch 的门禁；smoke_test 59 项通过。",
           "reason": null,
           "noFileImpact": false,
           "plannedFiles": [
@@ -402,31 +400,32 @@
               "from": null
             }
           ],
-          "updatedAt": "2026-08-09T05:26:11.671817Z",
-          "readiness": "ready",
+          "updatedAt": "2026-08-09T05:59:34.400345Z",
+          "completedBy": "documentation-implementer",
+          "readiness": "done",
           "blockedBy": [],
           "changeObservations": [
             {
               "path": "skills/track-ai-plans/references/plan-lifecycle.md",
               "plannedAction": "modify",
               "plannedFrom": null,
-              "observedAction": null,
+              "observedAction": "modify",
               "observedFrom": null,
-              "observedState": "pending"
+              "observedState": "change-observed"
             },
             {
               "path": "README.md",
               "plannedAction": "modify",
               "plannedFrom": null,
-              "observedAction": null,
+              "observedAction": "modify",
               "observedFrom": null,
-              "observedState": "pending"
+              "observedState": "change-observed"
             }
           ]
         }
       ],
       "phaseReview": {
-        "status": "not-ready",
+        "status": "pending",
         "reviewer": null,
         "evidence": null,
         "reason": null,
@@ -439,39 +438,23 @@
       "counts": {
         "total": 3,
         "status": {
-          "failed": 0,
           "in-progress": 0,
+          "failed": 0,
+          "not-started": 0,
           "blocked": 0,
-          "done": 2,
-          "not-started": 1
+          "done": 3
         }
       }
     }
   ],
   "issues": [],
-  "derivedIssues": [
-    {
-      "id": "derived-documentation-impact-missing",
-      "type": "documentation-impact-missing",
-      "severity": "critical",
-      "status": "open",
-      "title": "声明的文档范围还没有出现变更",
-      "detail": "缺少覆盖: README.md",
-      "nextAction": "更新声明范围内的文档,然后重新核对。"
-    }
-  ],
+  "derivedIssues": [],
   "nextActions": [
     {
-      "type": "item",
-      "id": "governance-docs",
-      "title": "更新审查工作流文档",
-      "reason": "ready"
-    },
-    {
-      "type": "issue",
-      "id": "derived-documentation-impact-missing",
-      "title": "声明的文档范围还没有出现变更",
-      "reason": "更新声明范围内的文档,然后重新核对。"
+      "type": "phase-review",
+      "id": "governance",
+      "title": "独立审查门禁",
+      "reason": "pending"
     }
   ]
 }

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "eventId": "2026-08-09T05-58-38.817543Z-item-updated-53667974",
+  "occurredAt": "2026-08-09T05:58:38.817543Z",
+  "type": "item-updated",
+  "planSlug": "review-gated-plans",
+  "actor": "documentation-implementer",
+  "actorType": "agent",
+  "details": {
+    "itemId": "governance-docs",
+    "status": "in-progress"
+  }
+}
