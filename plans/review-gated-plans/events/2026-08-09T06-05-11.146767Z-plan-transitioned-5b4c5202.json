@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "eventId": "2026-08-09T06-05-11.146767Z-plan-transitioned-5b4c5202",
+  "occurredAt": "2026-08-09T06:05:11.146767Z",
+  "type": "plan-transitioned",
+  "planSlug": "review-gated-plans",
+  "actor": "codex",
+  "actorType": "human",
+  "details": {
+    "fromState": "active",
+    "toState": "completed",
+    "reason": "用户批准的全部仪表盘与独立审查门禁工作已完成并通过最终审查"
+  }
+}

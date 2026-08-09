@@ -4,7 +4,7 @@
   "goal": "改善手机端仪表盘体验，确保列表与依赖图一次只显示一种视图，并强制独立 subagent 审查计划和每个阶段后才可继续。",
   "owner": "codex",
   "createdAt": "2026-08-09T05:25:07.787761Z",
-  "updatedAt": "2026-08-09T06:03:34.190230Z",
+  "updatedAt": "2026-08-09T06:05:11.147363Z",
   "currentPhaseId": "governance",
   "documentationImpact": {
     "mode": "required",
@@ -234,11 +234,11 @@
         }
       ],
       "phaseReview": {
-        "status": "pending",
-        "reviewer": null,
-        "evidence": null,
+        "status": "passed",
+        "reviewer": "governance-final-reviewer",
+        "evidence": "独立 subagent 最终审查通过：计划/阶段门禁、仪表盘审查区和 375px 移动端均符合要求；smoke_test 62 项通过。",
         "reason": null,
-        "reviewedAt": null
+        "reviewedAt": "2026-08-09T06:05:11.008455Z"
       }
     }
   ],
@@ -246,7 +246,7 @@
     "currentItemId": null,
     "lastCompletedItemId": "dashboard-review-gates",
     "stopReason": null,
-    "updatedAt": "2026-08-09T06:03:34.189780Z"
+    "updatedAt": "2026-08-09T06:05:11.146762Z"
   },
   "issues": []
 }
