@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AI Plan Progress</title>
+  <style>
+    :root{color-scheme:light;--bg:#f6f6f2;--card:#fff;--text:#171714;--muted:#6f6d65;--line:#d9d8d0;--blue:#246fc2;--green:#16752c;--red:#b52e2e;--amber:#9a6500}
+    @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#141412;--card:#1d1d1a;--text:#f1f0ea;--muted:#a29f94;--line:#3a3934;--blue:#65a5ee;--green:#62cf78;--red:#f47a7a;--amber:#edb54b}}
+    :root[data-theme="dark"]{color-scheme:dark;--bg:#141412;--card:#1d1d1a;--text:#f1f0ea;--muted:#a29f94;--line:#3a3934;--blue:#65a5ee;--green:#62cf78;--red:#f47a7a;--amber:#edb54b}
+    :root[data-theme="light"]{color-scheme:light;--bg:#f6f6f2;--card:#fff;--text:#171714;--muted:#6f6d65;--line:#d9d8d0;--blue:#246fc2;--green:#16752c;--red:#b52e2e;--amber:#9a6500}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,-apple-system,sans-serif}.wrap{max-width:1080px;margin:auto;padding:24px 18px 64px;display:grid;gap:20px}header{display:flex;justify-content:space-between;gap:16px;align-items:start;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:16px}h1{font-size:24px;margin:0}.goal,.muted{color:var(--muted)}.goal{margin-top:4px}button,select{min-height:44px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text);padding:8px 12px;font:inherit}button{cursor:pointer}button:focus-visible,select:focus-visible{outline:2px solid var(--blue);outline-offset:2px}.controls{display:flex;gap:8px;flex-wrap:wrap}.btn-primary{background:var(--blue);border-color:var(--blue);color:#fff}.section{display:grid;gap:10px}.section h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0}.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.tile,.stop,.phase,.issue,.empty{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}.value{font-size:25px;font-weight:750}.stop{border-color:var(--red);display:grid;gap:8px}.stop strong{font-size:16px}.phase{padding:0;overflow:hidden}.phase summary{cursor:pointer;padding:14px;display:flex;justify-content:space-between;gap:12px}.phase-body{border-top:1px solid var(--line)}.item{display:grid;grid-template-columns:minmax(180px,1fr) 100px minmax(200px,1fr) 40px;gap:12px;padding:12px 14px}.item+.item{border-top:1px solid var(--line)}.title{font-weight:700}.small{font-size:12px;color:var(--muted)}.hint{font-size:11.5px;color:var(--muted);font-style:italic}.badges{display:flex;flex-direction:column;gap:4px;align-items:flex-start}.badge{display:inline-flex;width:max-content;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:700}.conf{display:inline-flex;width:max-content;border:1px solid var(--line);border-radius:999px;padding:2px 7px;font-size:10.5px;color:var(--muted)}.done,.pass,.ready{color:var(--green)}.failed,.critical,.fail{color:var(--red)}.blocked,.warning{color:var(--amber)}.in-progress,.active,.unverified{color:var(--blue)}.skipped{color:var(--muted)}.issues{display:grid;gap:8px}.issue{display:grid;grid-template-columns:90px 1fr 40px;gap:12px}.error{color:var(--red)}.icon-btn{min-height:36px;min-width:36px;border:0;background:transparent;color:var(--muted);border-radius:7px;padding:6px}.icon-btn:hover{background:var(--bg);color:var(--blue)}
+    #toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,10px);background:var(--text);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:12.5px;font-weight:700;opacity:0;pointer-events:none;transition:.18s;z-index:50}#toast.show{opacity:1;transform:translate(-50%,0)}
+    .copy-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.5);z-index:60}.copy-overlay.open{display:flex}.dialog{width:min(520px,100%);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:12px}.dialog p{font-size:12.5px;color:var(--muted);margin:0}.dialog textarea{width:100%;height:180px;resize:vertical;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:10px;font:12px/1.5 ui-monospace,monospace}.dialog-actions{display:flex;justify-content:flex-end}
+    [hidden]{display:none!important}.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.view-toggle{display:flex;gap:6px}.view-toggle button{min-height:36px;padding:6px 10px}.view-toggle button[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff}.graph-wrap{display:grid;gap:10px}.graph-meta,.graph-legend{display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:12px}.graph-legend span{display:inline-flex;align-items:center;gap:5px}.legend-key{width:10px;height:10px;border:2px solid var(--line);border-radius:3px}.legend-key.done{border-color:var(--green)}.legend-key.in-progress{border-color:var(--blue)}.legend-key.blocked{border-color:var(--amber)}.legend-key.failed{border-color:var(--red)}.legend-key.current{box-shadow:0 0 0 2px var(--blue)}.graph-scroll{overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}.plan-dag{display:block}.graph-edge{fill:none;stroke:var(--line);stroke-width:1.5;vector-effect:non-scaling-stroke}.graph-edge.blocked{stroke:var(--amber);stroke-dasharray:5 4}.graph-node rect{fill:var(--card);stroke:var(--line);stroke-width:1.5;vector-effect:non-scaling-stroke}.graph-node.done rect{stroke:var(--green)}.graph-node.in-progress rect{stroke:var(--blue)}.graph-node.blocked rect{stroke:var(--amber);stroke-dasharray:5 3}.graph-node.failed rect{stroke:var(--red)}.graph-node.current rect{stroke:var(--blue);stroke-width:3}.graph-node .node-title{fill:var(--text);font-size:12px;font-weight:700}.graph-node .node-meta{fill:var(--muted);font-size:10.5px}.graph-node .node-status{font-size:10.5px;font-weight:700}.graph-node.done .node-status{fill:var(--green)}.graph-node.in-progress .node-status{fill:var(--blue)}.graph-node.blocked .node-status{fill:var(--amber)}.graph-node.failed .node-status{fill:var(--red)}.graph-node.ready .node-status{fill:var(--green)}
+    @media(max-width:620px){.item{grid-template-columns:1fr 40px}.issue{grid-template-columns:1fr 40px}.wrap{padding:18px 14px 48px}}
+    @media(prefers-reduced-motion:reduce){#toast{transition:none}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div><h1 id="name">AI Plan Progress</h1><div class="goal" id="goal">正在读取…</div><div class="small" id="meta"></div></div>
+      <div class="controls">
+        <select id="plans" aria-label="选择 Plan"></select>
+        <button id="theme" type="button">切换主题</button>
+        <button id="copy-summary" class="btn-primary" type="button">复制当前状态</button>
+        <button id="refresh" type="button">立即刷新</button>
+      </div>
+    </header>
+    <section class="section" id="execution-section"><h2>当前执行</h2><div id="execution"></div></section>
+    <section class="section"><h2>进度</h2><div class="tiles" id="summary"></div></section>
+    <section class="section"><div class="section-head"><h2>阶段与任务</h2><div class="view-toggle" role="group" aria-label="任务视图"><button id="view-list" type="button" aria-pressed="true">列表</button><button id="view-graph" type="button" aria-pressed="false">依赖图</button></div></div><div id="phases"></div><div id="plan-graph" class="graph-wrap" hidden></div></section>
+    <section class="section"><h2>问题</h2><div class="issues" id="issues"></div></section>
+    <div class="small" id="updated"></div>
+  </main>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div class="copy-overlay" id="copy-overlay">
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="copy-title">
+      <h2 id="copy-title" style="margin:0;font-size:15px">手动复制</h2>
+      <p>浏览器没有开放剪贴板权限。内容已经选中,按 Cmd/Ctrl + C 复制。</p>
+      <textarea id="copy-text" readonly></textarea>
+      <div class="dialog-actions"><button id="copy-close" type="button">关闭</button></div>
+    </section>
+  </div>
+  <script>
+  (function(){
+    "use strict";
+    var selected=null,indexData=null,currentData=null,planView="list";
+    var SVG_NS="http://www.w3.org/2000/svg";
+    var VERIFY_KIND_LABEL={test:"完成后自动验证",review:"完成后由 AI 判断","llm-review":"完成后由 AI 判断",manual:"完成后需人工确认"};
+    function el(tag,cls,text){var node=document.createElement(tag);if(cls)node.className=cls;if(text!=null)node.textContent=text;return node;}
+    function clear(node){while(node.firstChild)node.removeChild(node.firstChild);}
+    function tile(label,value,detail){var node=el("div","tile");node.append(el("div","small",label),el("div","value",String(value)),el("div","small",detail));return node;}
+    function badge(value){return el("span","badge "+value,value);}
+    function svgEl(tag,attrs,text){var node=document.createElementNS(SVG_NS,tag);Object.keys(attrs||{}).forEach(function(key){node.setAttribute(key,attrs[key]);});if(text!=null)node.textContent=text;return node;}
+    function shortText(value,max){value=String(value||"");return value.length>max?value.slice(0,max-1)+"…":value;}
+    function queryPlan(){var value=new URLSearchParams(location.search).get("plan");return value&&/^[a-z0-9-]+$/.test(value)?value:null;}
+    async function json(path){var response=await fetch(path,{cache:"no-store"});if(!response.ok)throw new Error(path+" HTTP "+response.status);return response.json();}
+
+    // ---- theme toggle: driven by a class/attribute the CSS keys off, never
+    // by the `hidden` attribute pattern — an author rule with `display` set
+    // always beats the browser's [hidden]{display:none}, so anything using
+    // `hidden` for show/hide next to a display-setting class silently breaks.
+    var root=document.documentElement;
+    function currentTheme(){var explicit=root.getAttribute("data-theme");if(explicit==="light"||explicit==="dark")return explicit;return window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}
+    function applyThemeLabel(){document.getElementById("theme").textContent=currentTheme()==="dark"?"浅色":"深色";}
+    (function initTheme(){var saved=null;try{saved=localStorage.getItem("plan-dashboard-theme");}catch(e){}if(saved==="light"||saved==="dark")root.setAttribute("data-theme",saved);applyThemeLabel();})();
+    document.getElementById("theme").addEventListener("click",function(){var next=currentTheme()==="dark"?"light":"dark";root.setAttribute("data-theme",next);try{localStorage.setItem("plan-dashboard-theme",next);}catch(e){}applyThemeLabel();});
+
+    // ---- toast + clipboard, with a manual-select fallback dialog ----
+    var toast=document.getElementById("toast"),toastTimer=null;
+    function showToast(message){toast.textContent=message;toast.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(function(){toast.classList.remove("show");},1800);}
+    var overlay=document.getElementById("copy-overlay"),copyBox=document.getElementById("copy-text");
+    function openFallback(text){copyBox.value=text;overlay.classList.add("open");copyBox.focus();copyBox.select();}
+    function closeFallback(){overlay.classList.remove("open");}
+    document.getElementById("copy-close").addEventListener("click",closeFallback);
+    overlay.addEventListener("click",function(e){if(e.target===overlay)closeFallback();});
+    document.addEventListener("keydown",function(e){if(e.key==="Escape"&&overlay.classList.contains("open"))closeFallback();});
+    function copyText(text){
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(function(){showToast("已复制,可以粘贴给 AI 讨论");}).catch(function(){fallbackCopy(text);});
+      }else{fallbackCopy(text);}
+    }
+    function fallbackCopy(text){
+      var ok=false;
+      try{var ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.focus();ta.select();ok=document.execCommand("copy");document.body.removeChild(ta);}catch(e){ok=false;}
+      if(ok){showToast("已复制,可以粘贴给 AI 讨论");}else{openFallback(text);}
+    }
+    function copyButton(label,text){var btn=el("button","icon-btn",null);btn.type="button";btn.setAttribute("aria-label",label);btn.textContent="⧉";btn.addEventListener("click",function(){copyText(text);});return btn;}
+    function itemCopyText(item){
+      return "【"+item.id+"】"+item.title+"\n"+
+        "状态: "+item.status+" · 就绪: "+item.readiness+(item.blockedBy&&item.blockedBy.length?"(被 "+item.blockedBy.join(", ")+" 卡住)":"")+"\n"+
+        "验证来源: "+item.verifiedBy+(item.verifyKind?" · 计划用 "+item.verifyKind+" 验证":"")+"\n"+
+        (item.evidence?"证据: "+item.evidence+"\n":"")+(item.reason?"原因: "+item.reason+"\n":"")+
+        "计划文件: "+(item.plannedFiles.length?item.plannedFiles.map(function(f){return f.path;}).join(", "):"无")+"\n\n"+
+        "帮我看看这一条现在是什么情况,接下来应该怎么处理。";
+    }
+    function issueCopyText(issue){
+      return "【问题】"+issue.title+"\n严重度: "+issue.severity+"\n情况: "+issue.detail+"\n下一步: "+issue.nextAction+"\n\n帮我看看这个问题该怎么处理。";
+    }
+    function summaryCopyText(data){
+      var s=data.summary,cc=data.changeCoverage,doc=data.documentationImpact,allIssues=data.issues.filter(function(i){return i.status==="open";}).concat(data.derivedIssues||[]);
+      var lines=[data.plan.name,data.plan.goal,"","状态: "+data.plan.state+" · 当前阶段 "+(data.plan.currentPhaseId||"未设置")];
+      if(data.execution.state==="stopped")lines.push("停点: "+(data.execution.currentItemId||"?")+" — "+(data.execution.stopReason||"未记录原因"));
+      lines.push("","进度: "+s.status.done+"/"+s.total+" 完成 · "+s.readiness.ready+" 可以开始 · "+s.readiness.blocked+" 被阻塞 · "+s.status.failed+" 失败");
+      lines.push("计划外改动: "+cc.unexpected+(cc.unexpected?"("+cc.offPlanChanges.map(function(c){return c.path;}).join(", ")+")":""));
+      lines.push("文档覆盖: "+(doc.status==="skipped"?"未声明":doc.matchedTargets+"/"+doc.totalTargets));
+      lines.push("开放问题: "+allIssues.length);
+      lines.push("","请根据这个状态告诉我接下来应该先处理哪一项、为什么。");
+      return lines.join("\n");
+    }
+
+    // ---- Plan DAG: a derived view over item.dependsOn, never stored as plan state ----
+    var listView=document.getElementById("phases"),graphView=document.getElementById("plan-graph");
+    var listButton=document.getElementById("view-list"),graphButton=document.getElementById("view-graph");
+    try{var savedView=localStorage.getItem("plan-dashboard-task-view");if(savedView==="graph")planView="graph";}catch(e){}
+    function setPlanView(mode){
+      planView=mode==="graph"?"graph":"list";
+      listView.hidden=planView!=="list";graphView.hidden=planView!=="graph";
+      listButton.setAttribute("aria-pressed",String(planView==="list"));graphButton.setAttribute("aria-pressed",String(planView==="graph"));
+      try{localStorage.setItem("plan-dashboard-task-view",planView);}catch(e){}
+    }
+    listButton.addEventListener("click",function(){setPlanView("list");});
+    graphButton.addEventListener("click",function(){setPlanView("graph");});
+
+    function renderPlanGraph(data){
+      clear(graphView);
+      var nodes=[],byId={},edgeCount=0;
+      data.phases.forEach(function(phase,phaseIndex){phase.items.forEach(function(item,itemIndex){
+        var node={id:item.id,title:item.title,phase:phase.title,phaseIndex:phaseIndex,itemIndex:itemIndex,status:item.status,readiness:item.readiness,dependsOn:item.dependsOn||[]};
+        nodes.push(node);byId[node.id]=node;edgeCount+=node.dependsOn.length;
+      });});
+      if(!nodes.length){graphView.appendChild(el("div","empty","这个 Plan 还没有任务"));return;}
+
+      var depthMemo={};
+      function depth(id,visiting){
+        if(depthMemo[id]!=null)return depthMemo[id];
+        if(visiting[id])return 0;
+        visiting[id]=true;
+        var node=byId[id],value=0;
+        if(node&&node.dependsOn.length)value=1+Math.max.apply(null,node.dependsOn.map(function(dep){return byId[dep]?depth(dep,visiting):0;}));
+        delete visiting[id];depthMemo[id]=value;return value;
+      }
+      var layers=[];
+      nodes.forEach(function(node){node.depth=depth(node.id,{});(layers[node.depth]||(layers[node.depth]=[])).push(node);});
+      layers.forEach(function(layer){(layer||[]).sort(function(a,b){return a.phaseIndex-b.phaseIndex||a.itemIndex-b.itemIndex;});});
+
+      var NODE_W=194,NODE_H=66,X_GAP=62,Y_GAP=34,PAD_X=34,PAD_Y=34;
+      var maxRows=Math.max.apply(null,layers.map(function(layer){return (layer||[]).length;}));
+      var graphWidth=PAD_X*2+layers.length*NODE_W+Math.max(0,layers.length-1)*X_GAP;
+      var graphHeight=PAD_Y*2+maxRows*NODE_H+Math.max(0,maxRows-1)*Y_GAP;
+      var positions={};
+      layers.forEach(function(layer,layerIndex){
+        var used=(layer||[]).length*NODE_H+Math.max(0,(layer||[]).length-1)*Y_GAP;
+        var top=PAD_Y+Math.max(0,(graphHeight-PAD_Y*2-used)/2);
+        (layer||[]).forEach(function(node,row){positions[node.id]={x:PAD_X+layerIndex*(NODE_W+X_GAP),y:top+row*(NODE_H+Y_GAP)};});
+      });
+
+      var meta=el("div","graph-meta",nodes.length+" 个任务 · "+edgeCount+" 条依赖");
+      var legend=el("div","graph-legend");
+      [["ready","可开始"],["in-progress","进行中"],["blocked","被阻塞"],["done","已完成"],["failed","失败"],["current","当前任务"]].forEach(function(pair){var item=el("span");item.append(el("i","legend-key "+pair[0]),document.createTextNode(pair[1]));legend.appendChild(item);});
+      graphView.append(meta,legend);
+
+      var scroll=el("div","graph-scroll"),titleId="dag-title-"+data.plan.slug,descId="dag-desc-"+data.plan.slug;
+      var svg=svgEl("svg",{class:"plan-dag",width:String(graphWidth),height:String(graphHeight),viewBox:"0 0 "+graphWidth+" "+graphHeight,role:"img","aria-labelledby":titleId+" "+descId});
+      svg.append(svgEl("title",{id:titleId},data.plan.name+"任务依赖图"),svgEl("desc",{id:descId},nodes.length+"个任务和"+edgeCount+"条依赖关系。箭头从前置任务指向依赖它的任务。"));
+      var defs=svgEl("defs"),marker=svgEl("marker",{id:"dag-arrow-"+data.plan.slug,viewBox:"0 0 10 10",refX:"9",refY:"5",markerWidth:"6",markerHeight:"6",orient:"auto-start-reverse"});
+      marker.appendChild(svgEl("path",{d:"M 0 0 L 10 5 L 0 10 z",fill:"var(--line)"}));defs.appendChild(marker);svg.appendChild(defs);
+
+      nodes.forEach(function(target){target.dependsOn.forEach(function(dep){
+        if(!positions[dep])return;
+        var from=positions[dep],to=positions[target.id],x1=from.x+NODE_W,y1=from.y+NODE_H/2,x2=to.x,y2=to.y+NODE_H/2,mid=x1+(x2-x1)/2;
+        var blocked=target.readiness==="blocked"&&byId[dep]&&byId[dep].status!=="done";
+        svg.appendChild(svgEl("path",{class:"graph-edge"+(blocked?" blocked":""),d:"M "+x1+" "+y1+" C "+mid+" "+y1+", "+mid+" "+y2+", "+x2+" "+y2,"marker-end":"url(#dag-arrow-"+data.plan.slug+")"}));
+      });});
+
+      nodes.forEach(function(node){
+        var pos=positions[node.id],state=node.readiness||node.status,isCurrent=data.execution.currentItemId===node.id;
+        var group=svgEl("g",{class:"graph-node "+state+(isCurrent?" current":"")});
+        group.appendChild(svgEl("title",{},node.id+" · "+node.title+" · "+state));
+        group.appendChild(svgEl("rect",{x:String(pos.x),y:String(pos.y),width:String(NODE_W),height:String(NODE_H),rx:"8"}));
+        group.appendChild(svgEl("text",{class:"node-title",x:String(pos.x+12),y:String(pos.y+20)},shortText(node.id+" · "+node.title,28)));
+        group.appendChild(svgEl("text",{class:"node-meta",x:String(pos.x+12),y:String(pos.y+39)},shortText(node.phase,30)));
+        group.appendChild(svgEl("text",{class:"node-status",x:String(pos.x+12),y:String(pos.y+56)},state+(isCurrent?" · 当前":"")));
+        svg.appendChild(group);
+      });
+      scroll.appendChild(svg);graphView.appendChild(scroll);
+    }
+
+    function renderIndex(){var select=document.getElementById("plans");clear(select);indexData.plans.forEach(function(plan){var option=el("option",null,plan.name+" · "+plan.state);option.value=plan.slug;select.appendChild(option);});var known=indexData.plans.some(function(plan){return plan.slug===selected;});selected=(known&&selected)||queryPlan()||indexData.currentPlanSlug||(indexData.plans[0]&&indexData.plans[0].slug);if(selected)select.value=selected;}
+    function render(data){
+      currentData=data;
+      document.getElementById("name").textContent=data.plan.name;
+      document.getElementById("goal").textContent=data.plan.goal;
+      document.getElementById("meta").textContent=data.plan.state+" · 当前阶段 "+(data.plan.currentPhaseId||"未设置");
+      var execution=document.getElementById("execution"),state=data.execution;clear(execution);
+      if(state.state==="stopped"){
+        var stop=el("div","stop");stop.append(el("strong",null,"停在 "+(state.currentItemId||"当前计划")),el("div",null,state.stopReason||"未记录原因"),el("div","small","最后完成: "+(state.lastCompletedItemId||"无")));execution.appendChild(stop);
+      }else{
+        execution.appendChild(el("div","tile",state.state==="running"?"正在执行 "+state.currentItemId:state.state==="completed"?"Plan 已完成":"当前没有正在执行的任务"));
+      }
+      var summary=document.getElementById("summary"),s=data.summary,cc=data.changeCoverage,doc=data.documentationImpact;clear(summary);
+      summary.append(
+        tile("已完成",s.status.done+" / "+s.total,"计划任务"),
+        tile("可以开始",s.readiness.ready,"依赖已满足,尚未开始"),
+        tile("被阻塞",s.readiness.blocked,"等待依赖或人工"),
+        tile("失败",s.status.failed,"需要处理"),
+        tile("置信来源",s.verifiedBy.script+" 脚本",s.verifiedBy.llm+" LLM · "+s.verifiedBy.human+" 人工"),
+        tile("计划外改动",cc.unexpected,cc.unexpected?cc.offPlanChanges.map(function(c){return c.path;}).join(", "):"没有发现"),
+        tile("文档覆盖",doc.status==="skipped"?"—":doc.matchedTargets+" / "+doc.totalTargets,doc.message||(doc.status==="skipped"?"未声明或跳过":"")),
+        tile("开放问题",s.openIssues,"含计划文件异常、计划外改动和文档缺口")
+      );
+      var phases=document.getElementById("phases");clear(phases);data.phases.forEach(function(phase){var details=el("details","phase");details.open=phase.id===data.plan.currentPhaseId;var summaryNode=el("summary");summaryNode.append(el("span","title",phase.title),el("span","small",phase.counts.status.done+" / "+phase.counts.total+" 完成"));details.appendChild(summaryNode);var body=el("div","phase-body");phase.items.forEach(function(item){
+        var row=el("div","item"),left=el("div"),middle=el("div","badges"),right=el("div");
+        left.append(el("div","title",item.id+" · "+item.title),el("div","small",item.purpose));
+        if(item.dependsOn.length)left.appendChild(el("div","small","依赖: "+item.dependsOn.join(", ")));
+        middle.append(badge(item.readiness),el("span","conf",item.verifiedBy));
+        if(item.readiness==="blocked"&&item.blockedBy.length)middle.appendChild(el("div","small","被 "+item.blockedBy.join(", ")+" 卡住"));
+        var evidenceLine=item.reason?"原因: "+item.reason:item.evidence?"证据: "+item.evidence:"尚无验证证据";
+        right.append(el("div","small",evidenceLine));
+        if(item.status==="not-started"&&item.verifyKind)right.appendChild(el("div","hint",VERIFY_KIND_LABEL[item.verifyKind]||item.verifyKind));
+        right.appendChild(el("div","small",item.plannedFiles.length?item.plannedFiles.map(function(f){var obs=(item.changeObservations||[]).filter(function(o){return o.path===f.path;})[0];return f.path+"("+(obs?obs.observedState:"pending")+")";}).join(", "):"没有声明预期文件"));
+        row.append(left,middle,right,copyButton("复制这一条,和 AI 讨论",itemCopyText(item)));body.appendChild(row);
+      });if(!phase.items.length)body.appendChild(el("div","empty","这个阶段还没有任务"));details.appendChild(body);phases.appendChild(details);});
+      renderPlanGraph(data);setPlanView(planView);
+      var issues=document.getElementById("issues");clear(issues);var allIssues=data.issues.concat(data.derivedIssues||[]);allIssues.forEach(function(issue){var row=el("div","issue"),sev=badge(issue.severity),content=el("div");content.append(el("div","title",(issue.type?"["+issue.type+"] ":"")+issue.title),el("div",null,issue.detail),el("div","small","下一步: "+issue.nextAction+" · "+issue.status));row.append(sev,content,copyButton("复制这个问题,和 AI 讨论",issueCopyText(issue)));issues.appendChild(row);});if(!allIssues.length)issues.appendChild(el("div","empty","当前没有问题"));
+      document.getElementById("updated").textContent="状态生成于 "+new Date(data.generatedAt).toLocaleString();
+    }
+    async function load(){try{indexData=await json("./plans/index.json");renderIndex();if(!selected)throw new Error("还没有 Plan");render(await json("./plans/"+encodeURIComponent(selected)+"/status.json"));}catch(error){document.getElementById("goal").textContent="看板读取失败";document.getElementById("execution").textContent=error.message;document.getElementById("execution").className="error";}}
+    document.getElementById("plans").addEventListener("change",function(event){selected=event.target.value;history.replaceState(null,"","?plan="+encodeURIComponent(selected));load();});
+    document.getElementById("refresh").addEventListener("click",load);
+    document.getElementById("copy-summary").addEventListener("click",function(){if(currentData)copyText(summaryCopyText(currentData));});
+    document.addEventListener("visibilitychange",function(){if(!document.hidden)load();});
+    var refreshTimer=setInterval(function(){if(!document.hidden)load();},5000);
+    load();
+  })();
+  </script>
+</body>
+</html>

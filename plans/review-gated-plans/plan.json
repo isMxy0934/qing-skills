@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 1,
+  "slug": "review-gated-plans",
+  "goal": "改善手机端仪表盘体验，确保列表与依赖图一次只显示一种视图，并强制独立 subagent 审查计划和每个阶段后才可继续。",
+  "owner": "codex",
+  "createdAt": "2026-08-09T05:25:07.787761Z",
+  "updatedAt": "2026-08-09T05:34:35.435713Z",
+  "currentPhaseId": "dashboard",
+  "documentationImpact": {
+    "mode": "required",
+    "coverage": "all",
+    "reason": null,
+    "targets": [
+      {
+        "pattern": "README.md",
+        "purpose": "更新用户可见能力与使用说明"
+      },
+      {
+        "pattern": "skills/track-ai-plans/SKILL.md",
+        "purpose": "更新 Codex 执行与审查规则"
+      }
+    ]
+  },
+  "phases": [
+    {
+      "id": "dashboard",
+      "title": "仪表盘体验",
+      "purpose": "让手机端紧凑易读，并让任务列表和 DAG 明确互斥。",
+      "items": [
+        {
+          "id": "dashboard-mobile",
+          "title": "优化手机端布局",
+          "purpose": "针对窄屏重排标题、控制区、任务卡片与依赖图，防止横向挤压和内容失读。",
+          "dependsOn": [],
+          "status": "not-started",
+          "verifyKind": "manual",
+          "verifiedBy": "unverified",
+          "evidence": null,
+          "reason": null,
+          "noFileImpact": false,
+          "plannedFiles": [
+            {
+              "path": "skills/track-ai-plans/assets/dashboard.html",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/scripts/smoke_test.sh",
+              "action": "modify",
+              "from": null
+            }
+          ],
+          "updatedAt": "2026-08-09T05:25:07.892646Z"
+        },
+        {
+          "id": "dashboard-view-mode",
+          "title": "明确任务视图模式",
+          "purpose": "确保列表和依赖图是单选切换而非同时出现，并提供清晰状态与可访问性语义。",
+          "dependsOn": [
+            "dashboard-mobile"
+          ],
+          "status": "not-started",
+          "verifyKind": "test",
+          "verifiedBy": "unverified",
+          "evidence": null,
+          "reason": null,
+          "noFileImpact": false,
+          "plannedFiles": [
+            {
+              "path": "skills/track-ai-plans/assets/dashboard.html",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/scripts/smoke_test.sh",
+              "action": "modify",
+              "from": null
+            }
+          ],
+          "updatedAt": "2026-08-09T05:25:07.947575Z"
+        }
+      ]
+    },
+    {
+      "id": "governance",
+      "title": "独立审查门禁",
+      "purpose": "让计划和阶段进度必须经过不同 subagent 的审查才可推进。",
+      "items": [
+        {
+          "id": "plan-peer-review",
+          "title": "增加计划双人审查门禁",
+          "purpose": "记录计划制定者和独立审查者，并在未通过审查前拒绝激活。",
+          "dependsOn": [
+            "dashboard-view-mode"
+          ],
+          "status": "not-started",
+          "verifyKind": "test",
+          "verifiedBy": "unverified",
+          "evidence": null,
+          "reason": null,
+          "noFileImpact": false,
+          "plannedFiles": [
+            {
+              "path": "skills/track-ai-plans/scripts/planctl.py",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/scripts/smoke_test.sh",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/SKILL.md",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/references/create-plan.md",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/references/schema.md",
+              "action": "modify",
+              "from": null
+            }
+          ],
+          "updatedAt": "2026-08-09T05:25:08.059833Z"
+        },
+        {
+          "id": "phase-review-gate",
+          "title": "增加阶段独立审查门禁",
+          "purpose": "每个阶段所有实施项完成后，必须由独立 subagent 审查通过，下一阶段项目才可开始。",
+          "dependsOn": [
+            "plan-peer-review"
+          ],
+          "status": "not-started",
+          "verifyKind": "test",
+          "verifiedBy": "unverified",
+          "evidence": null,
+          "reason": null,
+          "noFileImpact": false,
+          "plannedFiles": [
+            {
+              "path": "skills/track-ai-plans/scripts/planctl.py",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/scripts/smoke_test.sh",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/SKILL.md",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/references/work-plan.md",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/references/verify-plan.md",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/references/schema.md",
+              "action": "modify",
+              "from": null
+            }
+          ],
+          "updatedAt": "2026-08-09T05:25:08.118075Z"
+        },
+        {
+          "id": "governance-docs",
+          "title": "更新审查工作流文档",
+          "purpose": "说明计划审查与阶段审查门禁的生命周期、职责分工和执行步骤。",
+          "dependsOn": [
+            "phase-review-gate"
+          ],
+          "status": "not-started",
+          "verifyKind": "llm-review",
+          "verifiedBy": "unverified",
+          "evidence": null,
+          "reason": null,
+          "noFileImpact": false,
+          "plannedFiles": [
+            {
+              "path": "skills/track-ai-plans/references/plan-lifecycle.md",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "README.md",
+              "action": "modify",
+              "from": null
+            }
+          ],
+          "updatedAt": "2026-08-09T05:26:11.671817Z"
+        }
+      ]
+    }
+  ],
+  "checkpoint": {
+    "currentItemId": null,
+    "lastCompletedItemId": null,
+    "stopReason": null,
+    "updatedAt": "2026-08-09T05:25:07.787761Z"
+  },
+  "issues": []
+}

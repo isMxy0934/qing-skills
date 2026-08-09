@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "eventId": "2026-08-09T05-34-35.435152Z-plan-transitioned-0aad122b",
+  "occurredAt": "2026-08-09T05:34:35.435152Z",
+  "type": "plan-transitioned",
+  "planSlug": "review-gated-plans",
+  "actor": "codex",
+  "actorType": "human",
+  "details": {
+    "fromState": "draft",
+    "toState": "active",
+    "reason": "用户已批准执行该计划"
+  }
+}

@@ -1,0 +1,485 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-09T05:34:35.467624Z",
+  "plan": {
+    "slug": "review-gated-plans",
+    "name": "移动端仪表盘与审查门禁",
+    "goal": "改善手机端仪表盘体验，确保列表与依赖图一次只显示一种视图，并强制独立 subagent 审查计划和每个阶段后才可继续。",
+    "state": "active",
+    "owner": "codex",
+    "currentPhaseId": "dashboard",
+    "baselineCommit": "02113f0ea4fe606454b534821a0e9ef52eae313f",
+    "replacedBy": null,
+    "updatedAt": "2026-08-09T05:34:35.435713Z"
+  },
+  "execution": {
+    "state": "idle",
+    "currentItemId": null,
+    "lastCompletedItemId": null,
+    "stopReason": null,
+    "updatedAt": "2026-08-09T05:25:07.787761Z"
+  },
+  "summary": {
+    "total": 5,
+    "status": {
+      "failed": 0,
+      "done": 0,
+      "not-started": 5,
+      "blocked": 0,
+      "in-progress": 0
+    },
+    "readiness": {
+      "ready": 1,
+      "blocked": 4,
+      "in-progress": 0,
+      "done": 0,
+      "failed": 0
+    },
+    "verifiedBy": {
+      "script": 0,
+      "llm": 0,
+      "human": 0,
+      "unverified": 5
+    },
+    "openIssues": 1
+  },
+  "changeCoverage": {
+    "planned": 17,
+    "observed": 0,
+    "pending": 17,
+    "mismatched": 0,
+    "unexpected": 0,
+    "offPlanChanges": []
+  },
+  "documentationImpact": {
+    "status": "fail",
+    "mode": "required",
+    "coverage": "all",
+    "matchedTargets": 0,
+    "totalTargets": 2,
+    "missingTargets": [
+      "README.md",
+      "skills/track-ai-plans/SKILL.md"
+    ],
+    "completionBlocked": true,
+    "message": "缺少覆盖: README.md, skills/track-ai-plans/SKILL.md"
+  },
+  "phases": [
+    {
+      "id": "dashboard",
+      "title": "仪表盘体验",
+      "purpose": "让手机端紧凑易读，并让任务列表和 DAG 明确互斥。",
+      "items": [
+        {
+          "id": "dashboard-mobile",
+          "title": "优化手机端布局",
+          "purpose": "针对窄屏重排标题、控制区、任务卡片与依赖图，防止横向挤压和内容失读。",
+          "dependsOn": [],
+          "status": "not-started",
+          "verifyKind": "manual",
+          "verifiedBy": "unverified",
+          "evidence": null,
+          "reason": null,
+          "noFileImpact": false,
+          "plannedFiles": [
+            {
+              "path": "skills/track-ai-plans/assets/dashboard.html",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/scripts/smoke_test.sh",
+              "action": "modify",
+              "from": null
+            }
+          ],
+          "updatedAt": "2026-08-09T05:25:07.892646Z",
+          "readiness": "ready",
+          "blockedBy": [],
+          "changeObservations": [
+            {
+              "path": "skills/track-ai-plans/assets/dashboard.html",
+              "plannedAction": "modify",
+              "plannedFrom": null,
+              "observedAction": null,
+              "observedFrom": null,
+              "observedState": "pending"
+            },
+            {
+              "path": "skills/track-ai-plans/scripts/smoke_test.sh",
+              "plannedAction": "modify",
+              "plannedFrom": null,
+              "observedAction": null,
+              "observedFrom": null,
+              "observedState": "pending"
+            }
+          ]
+        },
+        {
+          "id": "dashboard-view-mode",
+          "title": "明确任务视图模式",
+          "purpose": "确保列表和依赖图是单选切换而非同时出现，并提供清晰状态与可访问性语义。",
+          "dependsOn": [
+            "dashboard-mobile"
+          ],
+          "status": "not-started",
+          "verifyKind": "test",
+          "verifiedBy": "unverified",
+          "evidence": null,
+          "reason": null,
+          "noFileImpact": false,
+          "plannedFiles": [
+            {
+              "path": "skills/track-ai-plans/assets/dashboard.html",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/scripts/smoke_test.sh",
+              "action": "modify",
+              "from": null
+            }
+          ],
+          "updatedAt": "2026-08-09T05:25:07.947575Z",
+          "readiness": "blocked",
+          "blockedBy": [
+            "dashboard-mobile"
+          ],
+          "changeObservations": [
+            {
+              "path": "skills/track-ai-plans/assets/dashboard.html",
+              "plannedAction": "modify",
+              "plannedFrom": null,
+              "observedAction": null,
+              "observedFrom": null,
+              "observedState": "pending"
+            },
+            {
+              "path": "skills/track-ai-plans/scripts/smoke_test.sh",
+              "plannedAction": "modify",
+              "plannedFrom": null,
+              "observedAction": null,
+              "observedFrom": null,
+              "observedState": "pending"
+            }
+          ]
+        }
+      ],
+      "counts": {
+        "total": 2,
+        "status": {
+          "failed": 0,
+          "done": 0,
+          "not-started": 2,
+          "blocked": 0,
+          "in-progress": 0
+        }
+      }
+    },
+    {
+      "id": "governance",
+      "title": "独立审查门禁",
+      "purpose": "让计划和阶段进度必须经过不同 subagent 的审查才可推进。",
+      "items": [
+        {
+          "id": "plan-peer-review",
+          "title": "增加计划双人审查门禁",
+          "purpose": "记录计划制定者和独立审查者，并在未通过审查前拒绝激活。",
+          "dependsOn": [
+            "dashboard-view-mode"
+          ],
+          "status": "not-started",
+          "verifyKind": "test",
+          "verifiedBy": "unverified",
+          "evidence": null,
+          "reason": null,
+          "noFileImpact": false,
+          "plannedFiles": [
+            {
+              "path": "skills/track-ai-plans/scripts/planctl.py",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/scripts/smoke_test.sh",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/SKILL.md",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/references/create-plan.md",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/references/schema.md",
+              "action": "modify",
+              "from": null
+            }
+          ],
+          "updatedAt": "2026-08-09T05:25:08.059833Z",
+          "readiness": "blocked",
+          "blockedBy": [
+            "dashboard-view-mode"
+          ],
+          "changeObservations": [
+            {
+              "path": "skills/track-ai-plans/scripts/planctl.py",
+              "plannedAction": "modify",
+              "plannedFrom": null,
+              "observedAction": null,
+              "observedFrom": null,
+              "observedState": "pending"
+            },
+            {
+              "path": "skills/track-ai-plans/scripts/smoke_test.sh",
+              "plannedAction": "modify",
+              "plannedFrom": null,
+              "observedAction": null,
+              "observedFrom": null,
+              "observedState": "pending"
+            },
+            {
+              "path": "skills/track-ai-plans/SKILL.md",
+              "plannedAction": "modify",
+              "plannedFrom": null,
+              "observedAction": null,
+              "observedFrom": null,
+              "observedState": "pending"
+            },
+            {
+              "path": "skills/track-ai-plans/references/create-plan.md",
+              "plannedAction": "modify",
+              "plannedFrom": null,
+              "observedAction": null,
+              "observedFrom": null,
+              "observedState": "pending"
+            },
+            {
+              "path": "skills/track-ai-plans/references/schema.md",
+              "plannedAction": "modify",
+              "plannedFrom": null,
+              "observedAction": null,
+              "observedFrom": null,
+              "observedState": "pending"
+            }
+          ]
+        },
+        {
+          "id": "phase-review-gate",
+          "title": "增加阶段独立审查门禁",
+          "purpose": "每个阶段所有实施项完成后，必须由独立 subagent 审查通过，下一阶段项目才可开始。",
+          "dependsOn": [
+            "plan-peer-review"
+          ],
+          "status": "not-started",
+          "verifyKind": "test",
+          "verifiedBy": "unverified",
+          "evidence": null,
+          "reason": null,
+          "noFileImpact": false,
+          "plannedFiles": [
+            {
+              "path": "skills/track-ai-plans/scripts/planctl.py",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/scripts/smoke_test.sh",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/SKILL.md",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/references/work-plan.md",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/references/verify-plan.md",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/references/schema.md",
+              "action": "modify",
+              "from": null
+            }
+          ],
+          "updatedAt": "2026-08-09T05:25:08.118075Z",
+          "readiness": "blocked",
+          "blockedBy": [
+            "plan-peer-review"
+          ],
+          "changeObservations": [
+            {
+              "path": "skills/track-ai-plans/scripts/planctl.py",
+              "plannedAction": "modify",
+              "plannedFrom": null,
+              "observedAction": null,
+              "observedFrom": null,
+              "observedState": "pending"
+            },
+            {
+              "path": "skills/track-ai-plans/scripts/smoke_test.sh",
+              "plannedAction": "modify",
+              "plannedFrom": null,
+              "observedAction": null,
+              "observedFrom": null,
+              "observedState": "pending"
+            },
+            {
+              "path": "skills/track-ai-plans/SKILL.md",
+              "plannedAction": "modify",
+              "plannedFrom": null,
+              "observedAction": null,
+              "observedFrom": null,
+              "observedState": "pending"
+            },
+            {
+              "path": "skills/track-ai-plans/references/work-plan.md",
+              "plannedAction": "modify",
+              "plannedFrom": null,
+              "observedAction": null,
+              "observedFrom": null,
+              "observedState": "pending"
+            },
+            {
+              "path": "skills/track-ai-plans/references/verify-plan.md",
+              "plannedAction": "modify",
+              "plannedFrom": null,
+              "observedAction": null,
+              "observedFrom": null,
+              "observedState": "pending"
+            },
+            {
+              "path": "skills/track-ai-plans/references/schema.md",
+              "plannedAction": "modify",
+              "plannedFrom": null,
+              "observedAction": null,
+              "observedFrom": null,
+              "observedState": "pending"
+            }
+          ]
+        },
+        {
+          "id": "governance-docs",
+          "title": "更新审查工作流文档",
+          "purpose": "说明计划审查与阶段审查门禁的生命周期、职责分工和执行步骤。",
+          "dependsOn": [
+            "phase-review-gate"
+          ],
+          "status": "not-started",
+          "verifyKind": "llm-review",
+          "verifiedBy": "unverified",
+          "evidence": null,
+          "reason": null,
+          "noFileImpact": false,
+          "plannedFiles": [
+            {
+              "path": "skills/track-ai-plans/references/plan-lifecycle.md",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "README.md",
+              "action": "modify",
+              "from": null
+            }
+          ],
+          "updatedAt": "2026-08-09T05:26:11.671817Z",
+          "readiness": "blocked",
+          "blockedBy": [
+            "phase-review-gate"
+          ],
+          "changeObservations": [
+            {
+              "path": "skills/track-ai-plans/references/plan-lifecycle.md",
+              "plannedAction": "modify",
+              "plannedFrom": null,
+              "observedAction": null,
+              "observedFrom": null,
+              "observedState": "pending"
+            },
+            {
+              "path": "README.md",
+              "plannedAction": "modify",
+              "plannedFrom": null,
+              "observedAction": null,
+              "observedFrom": null,
+              "observedState": "pending"
+            }
+          ]
+        }
+      ],
+      "counts": {
+        "total": 3,
+        "status": {
+          "failed": 0,
+          "done": 0,
+          "not-started": 3,
+          "blocked": 0,
+          "in-progress": 0
+        }
+      }
+    }
+  ],
+  "issues": [],
+  "derivedIssues": [
+    {
+      "id": "derived-documentation-impact-missing",
+      "type": "documentation-impact-missing",
+      "severity": "critical",
+      "status": "open",
+      "title": "声明的文档范围还没有出现变更",
+      "detail": "缺少覆盖: README.md, skills/track-ai-plans/SKILL.md",
+      "nextAction": "更新声明范围内的文档,然后重新核对。"
+    }
+  ],
+  "nextActions": [
+    {
+      "type": "item",
+      "id": "dashboard-mobile",
+      "title": "优化手机端布局",
+      "reason": "ready"
+    },
+    {
+      "type": "item",
+      "id": "dashboard-view-mode",
+      "title": "明确任务视图模式",
+      "reason": "blocked"
+    },
+    {
+      "type": "item",
+      "id": "plan-peer-review",
+      "title": "增加计划双人审查门禁",
+      "reason": "blocked"
+    },
+    {
+      "type": "item",
+      "id": "phase-review-gate",
+      "title": "增加阶段独立审查门禁",
+      "reason": "blocked"
+    },
+    {
+      "type": "item",
+      "id": "governance-docs",
+      "title": "更新审查工作流文档",
+      "reason": "blocked"
+    },
+    {
+      "type": "issue",
+      "id": "derived-documentation-impact-missing",
+      "title": "声明的文档范围还没有出现变更",
+      "reason": "更新声明范围内的文档,然后重新核对。"
+    }
+  ]
+}

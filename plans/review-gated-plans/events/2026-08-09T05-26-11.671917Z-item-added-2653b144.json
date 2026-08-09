@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "eventId": "2026-08-09T05-26-11.671917Z-item-added-2653b144",
+  "occurredAt": "2026-08-09T05:26:11.671917Z",
+  "type": "item-added",
+  "planSlug": "review-gated-plans",
+  "actor": "codex",
+  "actorType": "agent",
+  "details": {
+    "phaseId": "governance",
+    "itemId": "governance-docs"
+  }
+}
