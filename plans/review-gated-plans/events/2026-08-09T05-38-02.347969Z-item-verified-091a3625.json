@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "eventId": "2026-08-09T05-38-02.347969Z-item-verified-091a3625",
+  "occurredAt": "2026-08-09T05:38:02.347969Z",
+  "type": "item-verified",
+  "planSlug": "review-gated-plans",
+  "actor": "codex",
+  "actorType": "agent",
+  "details": {
+    "itemId": "dashboard-mobile",
+    "result": "pass",
+    "evidence": "375px 手机视口视觉检查：任务、控件与页面均无横向溢出；移动布局已按内容区分区重排。"
+  }
+}

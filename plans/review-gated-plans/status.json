@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-09T05:34:35.467624Z",
+  "generatedAt": "2026-08-09T05:38:02.598422Z",
   "plan": {
     "slug": "review-gated-plans",
     "name": "移动端仪表盘与审查门禁",
@@ -10,43 +10,43 @@
     "currentPhaseId": "dashboard",
     "baselineCommit": "02113f0ea4fe606454b534821a0e9ef52eae313f",
     "replacedBy": null,
-    "updatedAt": "2026-08-09T05:34:35.435713Z"
+    "updatedAt": "2026-08-09T05:38:02.554761Z"
   },
   "execution": {
     "state": "idle",
     "currentItemId": null,
-    "lastCompletedItemId": null,
+    "lastCompletedItemId": "dashboard-view-mode",
     "stopReason": null,
-    "updatedAt": "2026-08-09T05:25:07.787761Z"
+    "updatedAt": "2026-08-09T05:38:02.554258Z"
   },
   "summary": {
     "total": 5,
     "status": {
-      "failed": 0,
-      "done": 0,
-      "not-started": 5,
       "blocked": 0,
-      "in-progress": 0
+      "in-progress": 0,
+      "done": 2,
+      "not-started": 3,
+      "failed": 0
     },
     "readiness": {
       "ready": 1,
-      "blocked": 4,
+      "blocked": 2,
       "in-progress": 0,
-      "done": 0,
+      "done": 2,
       "failed": 0
     },
     "verifiedBy": {
-      "script": 0,
-      "llm": 0,
+      "script": 1,
       "human": 0,
-      "unverified": 5
+      "llm": 1,
+      "unverified": 3
     },
     "openIssues": 1
   },
   "changeCoverage": {
     "planned": 17,
-    "observed": 0,
-    "pending": 17,
+    "observed": 6,
+    "pending": 11,
     "mismatched": 0,
     "unexpected": 0,
     "offPlanChanges": []
@@ -75,10 +75,10 @@
           "title": "优化手机端布局",
           "purpose": "针对窄屏重排标题、控制区、任务卡片与依赖图，防止横向挤压和内容失读。",
           "dependsOn": [],
-          "status": "not-started",
+          "status": "done",
           "verifyKind": "manual",
-          "verifiedBy": "unverified",
-          "evidence": null,
+          "verifiedBy": "llm",
+          "evidence": "375px 手机视口视觉检查：任务、控件与页面均无横向溢出；移动布局已按内容区分区重排。",
           "reason": null,
           "noFileImpact": false,
           "plannedFiles": [
@@ -93,25 +93,25 @@
               "from": null
             }
           ],
-          "updatedAt": "2026-08-09T05:25:07.892646Z",
-          "readiness": "ready",
+          "updatedAt": "2026-08-09T05:38:02.347851Z",
+          "readiness": "done",
           "blockedBy": [],
           "changeObservations": [
             {
               "path": "skills/track-ai-plans/assets/dashboard.html",
               "plannedAction": "modify",
               "plannedFrom": null,
-              "observedAction": null,
+              "observedAction": "modify",
               "observedFrom": null,
-              "observedState": "pending"
+              "observedState": "change-observed"
             },
             {
               "path": "skills/track-ai-plans/scripts/smoke_test.sh",
               "plannedAction": "modify",
               "plannedFrom": null,
-              "observedAction": null,
+              "observedAction": "modify",
               "observedFrom": null,
-              "observedState": "pending"
+              "observedState": "change-observed"
             }
           ]
         },
@@ -122,10 +122,10 @@
           "dependsOn": [
             "dashboard-mobile"
           ],
-          "status": "not-started",
+          "status": "done",
           "verifyKind": "test",
-          "verifiedBy": "unverified",
-          "evidence": null,
+          "verifiedBy": "script",
+          "evidence": "smoke_test 36 项通过；375px 视口验证列表和 DAG 互斥，DAG 提示与容器内横向滚动可用。",
           "reason": null,
           "noFileImpact": false,
           "plannedFiles": [
@@ -140,27 +140,25 @@
               "from": null
             }
           ],
-          "updatedAt": "2026-08-09T05:25:07.947575Z",
-          "readiness": "blocked",
-          "blockedBy": [
-            "dashboard-mobile"
-          ],
+          "updatedAt": "2026-08-09T05:38:02.554150Z",
+          "readiness": "done",
+          "blockedBy": [],
           "changeObservations": [
             {
               "path": "skills/track-ai-plans/assets/dashboard.html",
               "plannedAction": "modify",
               "plannedFrom": null,
-              "observedAction": null,
+              "observedAction": "modify",
               "observedFrom": null,
-              "observedState": "pending"
+              "observedState": "change-observed"
             },
             {
               "path": "skills/track-ai-plans/scripts/smoke_test.sh",
               "plannedAction": "modify",
               "plannedFrom": null,
-              "observedAction": null,
+              "observedAction": "modify",
               "observedFrom": null,
-              "observedState": "pending"
+              "observedState": "change-observed"
             }
           ]
         }
@@ -168,11 +166,11 @@
       "counts": {
         "total": 2,
         "status": {
-          "failed": 0,
-          "done": 0,
-          "not-started": 2,
           "blocked": 0,
-          "in-progress": 0
+          "in-progress": 0,
+          "done": 2,
+          "not-started": 0,
+          "failed": 0
         }
       }
     },
@@ -222,10 +220,8 @@
             }
           ],
           "updatedAt": "2026-08-09T05:25:08.059833Z",
-          "readiness": "blocked",
-          "blockedBy": [
-            "dashboard-view-mode"
-          ],
+          "readiness": "ready",
+          "blockedBy": [],
           "changeObservations": [
             {
               "path": "skills/track-ai-plans/scripts/planctl.py",
@@ -239,9 +235,9 @@
               "path": "skills/track-ai-plans/scripts/smoke_test.sh",
               "plannedAction": "modify",
               "plannedFrom": null,
-              "observedAction": null,
+              "observedAction": "modify",
               "observedFrom": null,
-              "observedState": "pending"
+              "observedState": "change-observed"
             },
             {
               "path": "skills/track-ai-plans/SKILL.md",
@@ -332,9 +328,9 @@
               "path": "skills/track-ai-plans/scripts/smoke_test.sh",
               "plannedAction": "modify",
               "plannedFrom": null,
-              "observedAction": null,
+              "observedAction": "modify",
               "observedFrom": null,
-              "observedState": "pending"
+              "observedState": "change-observed"
             },
             {
               "path": "skills/track-ai-plans/SKILL.md",
@@ -423,11 +419,11 @@
       "counts": {
         "total": 3,
         "status": {
-          "failed": 0,
+          "blocked": 0,
+          "in-progress": 0,
           "done": 0,
           "not-started": 3,
-          "blocked": 0,
-          "in-progress": 0
+          "failed": 0
         }
       }
     }
@@ -447,21 +443,9 @@
   "nextActions": [
     {
       "type": "item",
-      "id": "dashboard-mobile",
-      "title": "优化手机端布局",
-      "reason": "ready"
-    },
-    {
-      "type": "item",
-      "id": "dashboard-view-mode",
-      "title": "明确任务视图模式",
-      "reason": "blocked"
-    },
-    {
-      "type": "item",
       "id": "plan-peer-review",
       "title": "增加计划双人审查门禁",
-      "reason": "blocked"
+      "reason": "ready"
     },
     {
       "type": "item",

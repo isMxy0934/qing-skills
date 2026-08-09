@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "revision": 9,
+  "revision": 13,
   "currentPlanSlug": "review-gated-plans",
-  "updatedAt": "2026-08-09T05:34:35.436226Z",
+  "updatedAt": "2026-08-09T05:38:02.555258Z",
   "plans": [
     {
       "slug": "review-gated-plans",
@@ -10,7 +10,7 @@
       "state": "active",
       "path": "review-gated-plans/plan.json",
       "createdAt": "2026-08-09T05:25:07.787761Z",
-      "updatedAt": "2026-08-09T05:34:35.435713Z",
+      "updatedAt": "2026-08-09T05:38:02.554761Z",
       "activatedAt": "2026-08-09T05:34:35.435024Z",
       "baselineCommit": "02113f0ea4fe606454b534821a0e9ef52eae313f",
       "replacedBy": null
