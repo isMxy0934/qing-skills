@@ -284,6 +284,12 @@ VIEW_MODE_EXCLUSIVE="$(grep -c 'listView.hidden=planView!==\"list\";graphView.hi
 check "dashboard gives mobile task cards named layout areas" "$MOBILE_GRID_AREAS" "1"
 check "dashboard explains mobile DAG scrolling" "$MOBILE_DAG_HINT" "1"
 check "dashboard keeps list and DAG mutually exclusive" "$VIEW_MODE_EXCLUSIVE" "1"
+REVIEW_CONTAINER="$(grep -c 'id="reviews"' "$DASHBOARD")"
+REVIEW_RENDERER="$(grep -c 'function reviewCard' "$DASHBOARD")"
+NEXT_ACTION_RENDERER="$(grep -c '(data.nextActions||\[\]).forEach' "$DASHBOARD")"
+check "dashboard includes review gate container" "$REVIEW_CONTAINER" "1"
+check "dashboard renders review gate status" "$REVIEW_RENDERER" "1"
+check "dashboard renders next actions" "$NEXT_ACTION_RENDERER" "1"
 
 echo ""
 echo "passed: $pass, failed: $fail"

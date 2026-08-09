@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-09T05:59:34.439368Z",
+  "generatedAt": "2026-08-09T06:03:34.232144Z",
   "plan": {
     "slug": "review-gated-plans",
     "name": "移动端仪表盘与审查门禁",
@@ -12,42 +12,42 @@
     "currentPhaseId": "governance",
     "baselineCommit": "02113f0ea4fe606454b534821a0e9ef52eae313f",
     "replacedBy": null,
-    "updatedAt": "2026-08-09T05:59:34.400939Z"
+    "updatedAt": "2026-08-09T06:03:34.190230Z"
   },
   "execution": {
     "state": "idle",
     "currentItemId": null,
-    "lastCompletedItemId": "governance-docs",
+    "lastCompletedItemId": "dashboard-review-gates",
     "stopReason": null,
-    "updatedAt": "2026-08-09T05:59:34.400459Z"
+    "updatedAt": "2026-08-09T06:03:34.189780Z"
   },
   "summary": {
-    "total": 5,
+    "total": 6,
     "status": {
-      "in-progress": 0,
       "failed": 0,
-      "not-started": 0,
       "blocked": 0,
-      "done": 5
+      "in-progress": 0,
+      "not-started": 0,
+      "done": 6
     },
     "readiness": {
       "ready": 0,
       "blocked": 0,
       "in-progress": 0,
-      "done": 5,
+      "done": 6,
       "failed": 0
     },
     "verifiedBy": {
-      "llm": 4,
-      "script": 1,
+      "script": 2,
       "human": 0,
+      "llm": 4,
       "unverified": 0
     },
     "openIssues": 0
   },
   "changeCoverage": {
-    "planned": 17,
-    "observed": 17,
+    "planned": 19,
+    "observed": 19,
     "pending": 0,
     "mismatched": 0,
     "unexpected": 0,
@@ -176,10 +176,10 @@
       "counts": {
         "total": 2,
         "status": {
-          "in-progress": 0,
           "failed": 0,
-          "not-started": 0,
           "blocked": 0,
+          "in-progress": 0,
+          "not-started": 0,
           "done": 2
         }
       }
@@ -422,6 +422,54 @@
               "observedState": "change-observed"
             }
           ]
+        },
+        {
+          "id": "dashboard-review-gates",
+          "title": "在仪表盘展示审查门禁",
+          "purpose": "展示计划审查、阶段审查、执行门禁和下一步，使待审或失败状态在任何阶段都可见。",
+          "dependsOn": [
+            "governance-docs"
+          ],
+          "status": "done",
+          "verifyKind": "test",
+          "verifiedBy": "script",
+          "completedBy": "dashboard-gate-implementer",
+          "evidence": "smoke_test 62 项通过；375px 浏览器验证审查区显示阶段门禁与下一步、无横向溢出且无控制台错误。",
+          "reason": null,
+          "noFileImpact": false,
+          "plannedFiles": [
+            {
+              "path": "skills/track-ai-plans/assets/dashboard.html",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/scripts/smoke_test.sh",
+              "action": "modify",
+              "from": null
+            }
+          ],
+          "updatedAt": "2026-08-09T06:03:34.189682Z",
+          "readiness": "done",
+          "blockedBy": [],
+          "changeObservations": [
+            {
+              "path": "skills/track-ai-plans/assets/dashboard.html",
+              "plannedAction": "modify",
+              "plannedFrom": null,
+              "observedAction": "modify",
+              "observedFrom": null,
+              "observedState": "change-observed"
+            },
+            {
+              "path": "skills/track-ai-plans/scripts/smoke_test.sh",
+              "plannedAction": "modify",
+              "plannedFrom": null,
+              "observedAction": "modify",
+              "observedFrom": null,
+              "observedState": "change-observed"
+            }
+          ]
         }
       ],
       "phaseReview": {
@@ -436,13 +484,13 @@
         "blockedByPhaseIds": []
       },
       "counts": {
-        "total": 3,
+        "total": 4,
         "status": {
-          "in-progress": 0,
           "failed": 0,
-          "not-started": 0,
           "blocked": 0,
-          "done": 3
+          "in-progress": 0,
+          "not-started": 0,
+          "done": 4
         }
       }
     }

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "eventId": "2026-08-09T06-01-12.229392Z-item-updated-5fb835f3",
+  "occurredAt": "2026-08-09T06:01:12.229392Z",
+  "type": "item-updated",
+  "planSlug": "review-gated-plans",
+  "actor": "dashboard-gate-implementer",
+  "actorType": "agent",
+  "details": {
+    "itemId": "dashboard-review-gates",
+    "status": "in-progress"
+  }
+}

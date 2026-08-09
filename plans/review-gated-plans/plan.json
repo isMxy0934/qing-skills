@@ -4,7 +4,7 @@
   "goal": "改善手机端仪表盘体验，确保列表与依赖图一次只显示一种视图，并强制独立 subagent 审查计划和每个阶段后才可继续。",
   "owner": "codex",
   "createdAt": "2026-08-09T05:25:07.787761Z",
-  "updatedAt": "2026-08-09T05:59:34.400939Z",
+  "updatedAt": "2026-08-09T06:03:34.190230Z",
   "currentPhaseId": "governance",
   "documentationImpact": {
     "mode": "required",
@@ -203,6 +203,34 @@
           ],
           "updatedAt": "2026-08-09T05:59:34.400345Z",
           "completedBy": "documentation-implementer"
+        },
+        {
+          "id": "dashboard-review-gates",
+          "title": "在仪表盘展示审查门禁",
+          "purpose": "展示计划审查、阶段审查、执行门禁和下一步，使待审或失败状态在任何阶段都可见。",
+          "dependsOn": [
+            "governance-docs"
+          ],
+          "status": "done",
+          "verifyKind": "test",
+          "verifiedBy": "script",
+          "completedBy": "dashboard-gate-implementer",
+          "evidence": "smoke_test 62 项通过；375px 浏览器验证审查区显示阶段门禁与下一步、无横向溢出且无控制台错误。",
+          "reason": null,
+          "noFileImpact": false,
+          "plannedFiles": [
+            {
+              "path": "skills/track-ai-plans/assets/dashboard.html",
+              "action": "modify",
+              "from": null
+            },
+            {
+              "path": "skills/track-ai-plans/scripts/smoke_test.sh",
+              "action": "modify",
+              "from": null
+            }
+          ],
+          "updatedAt": "2026-08-09T06:03:34.189682Z"
         }
       ],
       "phaseReview": {
@@ -216,9 +244,9 @@
   ],
   "checkpoint": {
     "currentItemId": null,
-    "lastCompletedItemId": "governance-docs",
+    "lastCompletedItemId": "dashboard-review-gates",
     "stopReason": null,
-    "updatedAt": "2026-08-09T05:59:34.400459Z"
+    "updatedAt": "2026-08-09T06:03:34.189780Z"
   },
   "issues": []
 }
