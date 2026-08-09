@@ -1,52 +1,54 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-09T05:38:02.598422Z",
+  "generatedAt": "2026-08-09T05:49:03.598361Z",
   "plan": {
     "slug": "review-gated-plans",
     "name": "移动端仪表盘与审查门禁",
     "goal": "改善手机端仪表盘体验，确保列表与依赖图一次只显示一种视图，并强制独立 subagent 审查计划和每个阶段后才可继续。",
     "state": "active",
     "owner": "codex",
-    "currentPhaseId": "dashboard",
+    "planner": null,
+    "planReview": null,
+    "currentPhaseId": "governance",
     "baselineCommit": "02113f0ea4fe606454b534821a0e9ef52eae313f",
     "replacedBy": null,
-    "updatedAt": "2026-08-09T05:38:02.554761Z"
+    "updatedAt": "2026-08-09T05:49:03.558833Z"
   },
   "execution": {
     "state": "idle",
     "currentItemId": null,
-    "lastCompletedItemId": "dashboard-view-mode",
+    "lastCompletedItemId": "plan-peer-review",
     "stopReason": null,
-    "updatedAt": "2026-08-09T05:38:02.554258Z"
+    "updatedAt": "2026-08-09T05:49:03.558369Z"
   },
   "summary": {
     "total": 5,
     "status": {
-      "blocked": 0,
       "in-progress": 0,
-      "done": 2,
-      "not-started": 3,
+      "blocked": 0,
+      "done": 3,
+      "not-started": 2,
       "failed": 0
     },
     "readiness": {
       "ready": 1,
-      "blocked": 2,
+      "blocked": 1,
       "in-progress": 0,
-      "done": 2,
+      "done": 3,
       "failed": 0
     },
     "verifiedBy": {
       "script": 1,
       "human": 0,
-      "llm": 1,
-      "unverified": 3
+      "llm": 2,
+      "unverified": 2
     },
     "openIssues": 1
   },
   "changeCoverage": {
     "planned": 17,
-    "observed": 6,
-    "pending": 11,
+    "observed": 13,
+    "pending": 4,
     "mismatched": 0,
     "unexpected": 0,
     "offPlanChanges": []
@@ -55,14 +57,13 @@
     "status": "fail",
     "mode": "required",
     "coverage": "all",
-    "matchedTargets": 0,
+    "matchedTargets": 1,
     "totalTargets": 2,
     "missingTargets": [
-      "README.md",
-      "skills/track-ai-plans/SKILL.md"
+      "README.md"
     ],
     "completionBlocked": true,
-    "message": "缺少覆盖: README.md, skills/track-ai-plans/SKILL.md"
+    "message": "缺少覆盖: README.md"
   },
   "phases": [
     {
@@ -166,8 +167,8 @@
       "counts": {
         "total": 2,
         "status": {
-          "blocked": 0,
           "in-progress": 0,
+          "blocked": 0,
           "done": 2,
           "not-started": 0,
           "failed": 0
@@ -186,10 +187,10 @@
           "dependsOn": [
             "dashboard-view-mode"
           ],
-          "status": "not-started",
+          "status": "done",
           "verifyKind": "test",
-          "verifiedBy": "unverified",
-          "evidence": null,
+          "verifiedBy": "llm",
+          "evidence": "独立代码审查通过：review-plan 持锁，switch 要求通过审查，planner/reviewer 身份显式且不同；smoke_test 48 项通过。",
           "reason": null,
           "noFileImpact": false,
           "plannedFiles": [
@@ -219,17 +220,17 @@
               "from": null
             }
           ],
-          "updatedAt": "2026-08-09T05:25:08.059833Z",
-          "readiness": "ready",
+          "updatedAt": "2026-08-09T05:49:03.558269Z",
+          "readiness": "done",
           "blockedBy": [],
           "changeObservations": [
             {
               "path": "skills/track-ai-plans/scripts/planctl.py",
               "plannedAction": "modify",
               "plannedFrom": null,
-              "observedAction": null,
+              "observedAction": "modify",
               "observedFrom": null,
-              "observedState": "pending"
+              "observedState": "change-observed"
             },
             {
               "path": "skills/track-ai-plans/scripts/smoke_test.sh",
@@ -243,25 +244,25 @@
               "path": "skills/track-ai-plans/SKILL.md",
               "plannedAction": "modify",
               "plannedFrom": null,
-              "observedAction": null,
+              "observedAction": "modify",
               "observedFrom": null,
-              "observedState": "pending"
+              "observedState": "change-observed"
             },
             {
               "path": "skills/track-ai-plans/references/create-plan.md",
               "plannedAction": "modify",
               "plannedFrom": null,
-              "observedAction": null,
+              "observedAction": "modify",
               "observedFrom": null,
-              "observedState": "pending"
+              "observedState": "change-observed"
             },
             {
               "path": "skills/track-ai-plans/references/schema.md",
               "plannedAction": "modify",
               "plannedFrom": null,
-              "observedAction": null,
+              "observedAction": "modify",
               "observedFrom": null,
-              "observedState": "pending"
+              "observedState": "change-observed"
             }
           ]
         },
@@ -311,18 +312,16 @@
             }
           ],
           "updatedAt": "2026-08-09T05:25:08.118075Z",
-          "readiness": "blocked",
-          "blockedBy": [
-            "plan-peer-review"
-          ],
+          "readiness": "ready",
+          "blockedBy": [],
           "changeObservations": [
             {
               "path": "skills/track-ai-plans/scripts/planctl.py",
               "plannedAction": "modify",
               "plannedFrom": null,
-              "observedAction": null,
+              "observedAction": "modify",
               "observedFrom": null,
-              "observedState": "pending"
+              "observedState": "change-observed"
             },
             {
               "path": "skills/track-ai-plans/scripts/smoke_test.sh",
@@ -336,9 +335,9 @@
               "path": "skills/track-ai-plans/SKILL.md",
               "plannedAction": "modify",
               "plannedFrom": null,
-              "observedAction": null,
+              "observedAction": "modify",
               "observedFrom": null,
-              "observedState": "pending"
+              "observedState": "change-observed"
             },
             {
               "path": "skills/track-ai-plans/references/work-plan.md",
@@ -360,9 +359,9 @@
               "path": "skills/track-ai-plans/references/schema.md",
               "plannedAction": "modify",
               "plannedFrom": null,
-              "observedAction": null,
+              "observedAction": "modify",
               "observedFrom": null,
-              "observedState": "pending"
+              "observedState": "change-observed"
             }
           ]
         },
@@ -419,10 +418,10 @@
       "counts": {
         "total": 3,
         "status": {
-          "blocked": 0,
           "in-progress": 0,
-          "done": 0,
-          "not-started": 3,
+          "blocked": 0,
+          "done": 1,
+          "not-started": 2,
           "failed": 0
         }
       }
@@ -436,22 +435,16 @@
       "severity": "critical",
       "status": "open",
       "title": "声明的文档范围还没有出现变更",
-      "detail": "缺少覆盖: README.md, skills/track-ai-plans/SKILL.md",
+      "detail": "缺少覆盖: README.md",
       "nextAction": "更新声明范围内的文档,然后重新核对。"
     }
   ],
   "nextActions": [
     {
       "type": "item",
-      "id": "plan-peer-review",
-      "title": "增加计划双人审查门禁",
-      "reason": "ready"
-    },
-    {
-      "type": "item",
       "id": "phase-review-gate",
       "title": "增加阶段独立审查门禁",
-      "reason": "blocked"
+      "reason": "ready"
     },
     {
       "type": "item",

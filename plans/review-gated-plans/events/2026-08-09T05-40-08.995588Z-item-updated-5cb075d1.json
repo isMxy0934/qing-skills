@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "eventId": "2026-08-09T05-40-08.995588Z-item-updated-5cb075d1",
+  "occurredAt": "2026-08-09T05:40:08.995588Z",
+  "type": "item-updated",
+  "planSlug": "review-gated-plans",
+  "actor": "workflow-implementer",
+  "actorType": "agent",
+  "details": {
+    "itemId": "plan-peer-review",
+    "status": "in-progress"
+  }
+}

@@ -33,6 +33,7 @@ ITEM_STATES = {"not-started", "in-progress", "done", "failed", "blocked"}
 FILE_ACTIONS = {"create", "modify", "delete", "move"}
 VERIFY_SOURCES = {"script", "llm", "human"}
 VERIFY_KINDS = {"test", "llm-review", "manual"}
+PLAN_REVIEW_STATES = {"pending", "passed", "failed"}
 DOC_MODES = {"required", "none"}
 DOC_COVERAGE = {"all", "any"}
 MUTATING_COMMANDS = {
@@ -40,6 +41,7 @@ MUTATING_COMMANDS = {
     "set-documentation-impact",
     "add-phase",
     "add-item",
+    "review-plan",
     "update-item",
     "verify",
     "checkpoint",
@@ -253,6 +255,13 @@ def require_human(args: argparse.Namespace, action: str) -> None:
         die(f"{action} requires --actor-type human — surface this decision to the user")
 
 
+def require_agent(args: argparse.Namespace, action: str) -> None:
+    if args.actor_type != "agent":
+        die(f"{action} requires --actor-type agent — assign it to a subagent")
+    if not args.actor or not args.actor.strip():
+        die(f"{action} requires a non-empty --actor subagent identity")
+
+
 def run_git(root: Path, args: list[str]) -> subprocess.CompletedProcess:
     return subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True)
 
@@ -415,13 +424,41 @@ def compute_documentation_impact(plan: dict, change_map: dict[str, dict], has_ba
 def validate_plan(entry: dict, plan: dict) -> list[str]:
     slug = entry.get("slug", "<unknown>")
     errors = []
-    for key in ["schemaVersion", "slug", "goal", "phases", "checkpoint", "issues"]:
+    legacy_reviewless = (
+        entry.get("state") != "draft"
+        and "planner" not in plan
+        and "planReview" not in plan
+    )
+    required_keys = ["schemaVersion", "slug", "goal", "phases", "checkpoint", "issues"]
+    if not legacy_reviewless:
+        required_keys.extend(["planner", "planReview"])
+    for key in required_keys:
         if key not in plan:
             errors.append(f"{slug}: missing {key}")
     if plan.get("schemaVersion") != PLAN_SCHEMA_VERSION:
         errors.append(f"{slug}: unsupported plan schemaVersion")
     if plan.get("slug") != slug:
         errors.append(f"{slug}: plan.json slug does not match registry")
+    if not legacy_reviewless:
+        if not isinstance(plan.get("planner"), str) or not plan.get("planner", "").strip():
+            errors.append(f"{slug}: planner must be a non-empty agent identity")
+        review = plan.get("planReview")
+        if not isinstance(review, dict) or review.get("status") not in PLAN_REVIEW_STATES:
+            errors.append(f"{slug}: invalid planReview")
+        elif review["status"] == "pending":
+            if any(review.get(key) is not None for key in ("reviewer", "evidence", "reason", "reviewedAt")):
+                errors.append(f"{slug}: pending planReview must not retain reviewer evidence")
+        else:
+            if not isinstance(review.get("reviewer"), str) or not review.get("reviewer", "").strip():
+                errors.append(f"{slug}: reviewed plan requires reviewer")
+            if not review.get("evidence") or not review.get("reviewedAt"):
+                errors.append(f"{slug}: reviewed plan requires evidence and reviewedAt")
+            if review.get("reviewer") == plan.get("planner"):
+                errors.append(f"{slug}: planner cannot review their own plan")
+            if review["status"] == "passed" and review.get("reason") is not None:
+                errors.append(f"{slug}: passed planReview must not retain a reason")
+            if review["status"] == "failed" and not review.get("reason"):
+                errors.append(f"{slug}: failed planReview requires a reason")
     phase_ids = [phase.get("id") for phase in plan.get("phases", [])]
     if len(phase_ids) != len(set(phase_ids)):
         errors.append(f"{slug}: duplicate phase id")
@@ -657,6 +694,8 @@ def status_projection(entry: dict, plan: dict, root: Path) -> dict:
             "goal": plan["goal"],
             "state": entry["state"],
             "owner": plan.get("owner"),
+            "planner": plan.get("planner"),
+            "planReview": plan.get("planReview"),
             "currentPhaseId": plan.get("currentPhaseId"),
             "baselineCommit": baseline,
             "replacedBy": entry.get("replacedBy"),
@@ -724,7 +763,38 @@ def build_doc_impact(mode: str | None, coverage: str, reason: str | None, target
     }
 
 
+def pending_plan_review() -> dict:
+    return {
+        "status": "pending",
+        "reviewer": None,
+        "evidence": None,
+        "reason": None,
+        "reviewedAt": None,
+    }
+
+
+def invalidate_plan_review(plan: dict) -> bool:
+    """Invalidate a draft review after its declared scope changes.
+
+    The author can keep editing a rejected or already-approved draft, but a
+    reviewer must assess the resulting version rather than a stale one.
+    """
+    previous = plan.get("planReview", {})
+    was_reviewed = previous.get("status") != "pending"
+    plan["planReview"] = pending_plan_review()
+    return was_reviewed
+
+
+def require_planner(args: argparse.Namespace, plan: dict, action: str) -> None:
+    require_agent(args, action)
+    if args.actor != plan.get("planner"):
+        die(f"{action} requires the recorded planner agent: {plan.get('planner')}")
+
+
 def cmd_create(args: argparse.Namespace, root: Path) -> dict:
+    require_agent(args, "create")
+    if args.activate:
+        die("create --activate bypasses required independent plan review; create a draft, review-plan, then transition")
     index = load_index(root, allow_missing=True)
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]{1,62}[a-z0-9]", args.slug):
         die("slug must use 3-64 lowercase letters, digits, and hyphens")
@@ -732,12 +802,6 @@ def cmd_create(args: argparse.Namespace, root: Path) -> dict:
         die(f"plan already exists: {args.slug}")
     baseline = None
     state = "draft"
-    if args.activate:
-        require_human(args, "create --activate")
-        if index.get("currentPlanSlug"):
-            die(f"current plan already exists: {index['currentPlanSlug']}")
-        baseline = capture_activation_baseline(root)
-        state = "active"
     timestamp = now()
     entry = {
         "slug": args.slug,
@@ -746,7 +810,7 @@ def cmd_create(args: argparse.Namespace, root: Path) -> dict:
         "path": f"{args.slug}/plan.json",
         "createdAt": timestamp,
         "updatedAt": timestamp,
-        "activatedAt": timestamp if state == "active" else None,
+        "activatedAt": None,
         "baselineCommit": baseline,
         "replacedBy": None,
     }
@@ -755,6 +819,8 @@ def cmd_create(args: argparse.Namespace, root: Path) -> dict:
         "slug": args.slug,
         "goal": args.goal,
         "owner": args.owner,
+        "planner": args.actor,
+        "planReview": pending_plan_review(),
         "createdAt": timestamp,
         "updatedAt": timestamp,
         "currentPhaseId": None,
@@ -765,8 +831,6 @@ def cmd_create(args: argparse.Namespace, root: Path) -> dict:
     }
     atomic_json(plan_path(root, args.slug), plan)
     index["plans"].append(entry)
-    if state == "active":
-        index["currentPlanSlug"] = args.slug
     save_index(root, index)
     install_dashboard(root, overwrite=False)
     event(root, args.slug, "plan-created", args.actor, args.actor_type, {"state": state, "goal": args.goal})
@@ -776,26 +840,38 @@ def cmd_create(args: argparse.Namespace, root: Path) -> dict:
 def cmd_set_documentation_impact(args: argparse.Namespace, root: Path) -> dict:
     index, entry, plan = selected_plan(args, root)
     require_state(entry, {"draft", "active"}, "set-documentation-impact")
+    if entry["state"] == "draft":
+        require_planner(args, plan, "set-documentation-impact on a draft")
     plan["documentationImpact"] = build_doc_impact(args.mode, args.coverage, args.reason, args.target)
-    event(root, entry["slug"], "documentation-impact-set", args.actor, args.actor_type, plan["documentationImpact"])
+    invalidated = invalidate_plan_review(plan) if entry["state"] == "draft" else False
+    event(root, entry["slug"], "documentation-impact-set", args.actor, args.actor_type, {
+        **plan["documentationImpact"], "planReviewInvalidated": invalidated,
+    })
     return save_plan_content(root, index, entry, plan)
 
 
 def cmd_add_phase(args: argparse.Namespace, root: Path) -> dict:
     index, entry, plan = selected_plan(args, root)
     require_state(entry, {"draft", "active"}, "add-phase")
+    if entry["state"] == "draft":
+        require_planner(args, plan, "add-phase on a draft")
     if any(phase["id"] == args.id for phase in plan["phases"]):
         die(f"phase already exists: {args.id}")
     plan["phases"].append({"id": args.id, "title": args.title, "purpose": args.purpose, "items": []})
     if plan["currentPhaseId"] is None:
         plan["currentPhaseId"] = args.id
-    event(root, entry["slug"], "phase-added", args.actor, args.actor_type, {"phaseId": args.id})
+    invalidated = invalidate_plan_review(plan) if entry["state"] == "draft" else False
+    event(root, entry["slug"], "phase-added", args.actor, args.actor_type, {
+        "phaseId": args.id, "planReviewInvalidated": invalidated,
+    })
     return save_plan_content(root, index, entry, plan)
 
 
 def cmd_add_item(args: argparse.Namespace, root: Path) -> dict:
     index, entry, plan = selected_plan(args, root)
     require_state(entry, {"draft", "active"}, "add-item")
+    if entry["state"] == "draft":
+        require_planner(args, plan, "add-item on a draft")
     if args.id in item_map(plan):
         die(f"item already exists: {args.id}")
     phase = next((value for value in plan["phases"] if value["id"] == args.phase), None)
@@ -822,7 +898,31 @@ def cmd_add_item(args: argparse.Namespace, root: Path) -> dict:
         "updatedAt": now(),
     }
     phase["items"].append(item)
-    event(root, entry["slug"], "item-added", args.actor, args.actor_type, {"phaseId": args.phase, "itemId": args.id})
+    invalidated = invalidate_plan_review(plan) if entry["state"] == "draft" else False
+    event(root, entry["slug"], "item-added", args.actor, args.actor_type, {
+        "phaseId": args.phase, "itemId": args.id, "planReviewInvalidated": invalidated,
+    })
+    return save_plan_content(root, index, entry, plan)
+
+
+def cmd_review_plan(args: argparse.Namespace, root: Path) -> dict:
+    index, entry, plan = selected_plan(args, root)
+    require_state(entry, {"draft"}, "review-plan")
+    require_agent(args, "review-plan")
+    if args.actor == plan["planner"]:
+        die("review-plan requires an agent other than the recorded planner")
+    if args.result == "fail" and not args.reason:
+        die("failed plan review requires --reason")
+    plan["planReview"] = {
+        "status": "passed" if args.result == "pass" else "failed",
+        "reviewer": args.actor,
+        "evidence": args.evidence,
+        "reason": args.reason if args.result == "fail" else None,
+        "reviewedAt": now(),
+    }
+    event(root, entry["slug"], "plan-reviewed", args.actor, args.actor_type, {
+        "result": args.result, "evidence": args.evidence, "reason": args.reason,
+    })
     return save_plan_content(root, index, entry, plan)
 
 
@@ -970,6 +1070,8 @@ def cmd_transition(args: argparse.Namespace, root: Path) -> dict:
     if args.state == "active" and old_state == "draft":
         if index.get("currentPlanSlug"):
             die(f"current plan already exists: {index['currentPlanSlug']}")
+        if plan.get("planReview", {}).get("status") != "passed":
+            die("cannot activate a draft until review-plan records a passed independent review")
         entry["baselineCommit"] = capture_activation_baseline(root)
         entry["activatedAt"] = now()
         index["currentPlanSlug"] = entry["slug"]
@@ -1011,9 +1113,11 @@ def cmd_switch(args: argparse.Namespace, root: Path) -> dict:
     new_entry = find_entry(index, args.to)
     if new_entry["state"] != "draft":
         die("switch target must be draft")
-    baseline = capture_activation_baseline(root)
     old_plan = load_plan_content(root, old_slug)
     new_plan = load_plan_content(root, args.to)
+    if new_plan.get("planReview", {}).get("status") != "passed":
+        die("switch target requires a passed independent plan review")
+    baseline = capture_activation_baseline(root)
     old_entry.update({"state": "cancelled", "replacedBy": args.to, "updatedAt": now()})
     old_plan["checkpoint"].update({"stopReason": args.reason, "updatedAt": now()})
     new_entry.update({"state": "active", "baselineCommit": baseline, "activatedAt": now(), "updatedAt": now()})
@@ -1078,8 +1182,12 @@ def add_plan_option(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--plan", help="plan slug; defaults to currentPlanSlug")
 
 
-def add_actor_option(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--actor", default=os.environ.get("USER", "codex"))
+def add_actor_option(parser: argparse.ArgumentParser, *, require_actor: bool = False) -> None:
+    parser.add_argument(
+        "--actor",
+        required=require_actor,
+        default=None if require_actor else os.environ.get("USER", "codex"),
+    )
     parser.add_argument("--actor-type", choices=["human", "agent"], default="agent")
 
 
@@ -1098,7 +1206,7 @@ def build_parser() -> argparse.ArgumentParser:
     create.add_argument("--doc-coverage", choices=sorted(DOC_COVERAGE), default="all")
     create.add_argument("--doc-reason")
     create.add_argument("--doc-target", action="append")
-    add_actor_option(create)
+    add_actor_option(create, require_actor=True)
     create.set_defaults(handler=cmd_create)
 
     doc = sub.add_parser("set-documentation-impact")
@@ -1130,6 +1238,14 @@ def build_parser() -> argparse.ArgumentParser:
     item.add_argument("--verify-kind", required=True, choices=sorted(VERIFY_KINDS))
     add_actor_option(item)
     item.set_defaults(handler=cmd_add_item)
+
+    review_plan = sub.add_parser("review-plan")
+    add_plan_option(review_plan)
+    review_plan.add_argument("--result", required=True, choices=["pass", "fail"])
+    review_plan.add_argument("--evidence", required=True)
+    review_plan.add_argument("--reason")
+    add_actor_option(review_plan, require_actor=True)
+    review_plan.set_defaults(handler=cmd_review_plan)
 
     update = sub.add_parser("update-item")
     add_plan_option(update)

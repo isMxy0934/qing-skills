@@ -4,8 +4,8 @@
   "goal": "改善手机端仪表盘体验，确保列表与依赖图一次只显示一种视图，并强制独立 subagent 审查计划和每个阶段后才可继续。",
   "owner": "codex",
   "createdAt": "2026-08-09T05:25:07.787761Z",
-  "updatedAt": "2026-08-09T05:38:02.554761Z",
-  "currentPhaseId": "dashboard",
+  "updatedAt": "2026-08-09T05:49:03.558833Z",
+  "currentPhaseId": "governance",
   "documentationImpact": {
     "mode": "required",
     "coverage": "all",
@@ -93,10 +93,10 @@
           "dependsOn": [
             "dashboard-view-mode"
           ],
-          "status": "not-started",
+          "status": "done",
           "verifyKind": "test",
-          "verifiedBy": "unverified",
-          "evidence": null,
+          "verifiedBy": "llm",
+          "evidence": "独立代码审查通过：review-plan 持锁，switch 要求通过审查，planner/reviewer 身份显式且不同；smoke_test 48 项通过。",
           "reason": null,
           "noFileImpact": false,
           "plannedFiles": [
@@ -126,7 +126,7 @@
               "from": null
             }
           ],
-          "updatedAt": "2026-08-09T05:25:08.059833Z"
+          "updatedAt": "2026-08-09T05:49:03.558269Z"
         },
         {
           "id": "phase-review-gate",
@@ -207,9 +207,9 @@
   ],
   "checkpoint": {
     "currentItemId": null,
-    "lastCompletedItemId": "dashboard-view-mode",
+    "lastCompletedItemId": "plan-peer-review",
     "stopReason": null,
-    "updatedAt": "2026-08-09T05:38:02.554258Z"
+    "updatedAt": "2026-08-09T05:49:03.558369Z"
   },
   "issues": []
 }

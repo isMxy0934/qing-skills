@@ -41,7 +41,12 @@ git -C "$WORKDIR" add packages/contracts/command.ts
 git -C "$WORKDIR" commit -qm baseline
 
 # Draft creation does not capture a baseline or occupy the current slot.
+expect_die "plan creation requires a planner subagent" \
+  P create --slug human-plan --name Human --goal invalid --actor human-planner --actor-type human
+expect_die "plan creation requires an explicit planner identity" \
+  P create --slug unnamed-plan --name Unnamed --goal invalid
 P create --slug demo-plan --name "Demo plan" --goal "exercise plan tracking" --owner tester \
+  --actor planner-agent --actor-type agent \
   --doc-mode required --doc-coverage all \
   --doc-target "docs/architecture/**:sync architecture" \
   --doc-target "docs/implementation/**:sync implementation" >/dev/null
@@ -50,21 +55,25 @@ check "all stored artifacts start at schema version one" "$SCHEMA_VERSIONS" "1 /
 INDEX_DRAFT="$(python3 -c "import json;d=json.load(open('$WORKDIR/plans/index.json'));e=d['plans'][0];print(str(d['currentPlanSlug'])+' / '+str(e['baselineCommit'])+' / '+e['state'])")"
 check "draft has no current slot or baseline" "$INDEX_DRAFT" "None / None / draft"
 check "create installs the dashboard automatically" "$(test -f "$WORKDIR/plan-dashboard.html" && echo yes || echo no)" "yes"
+PLAN_REVIEW_PENDING="$(python3 -c "import json;d=json.load(open('$WORKDIR/plans/demo-plan/plan.json'));print(d['planner']+' / '+d['planReview']['status'])")"
+check "draft records its planner and starts pending review" "$PLAN_REVIEW_PENDING" "planner-agent / pending"
 
-P add-phase --plan demo-plan --id ph1 --title "Phase one" --purpose "prove plan tracking" >/dev/null
+expect_die "only recorded planner can edit a draft" \
+  P add-phase --plan demo-plan --id unauthorized --title Unauthorized --purpose invalid --actor other-agent --actor-type agent
+P add-phase --plan demo-plan --id ph1 --title "Phase one" --purpose "prove plan tracking" --actor planner-agent --actor-type agent >/dev/null
 expect_die "item requires file-impact declaration" \
-  P add-item --plan demo-plan --phase ph1 --id invalid --title Invalid --purpose invalid --verify-kind test
+  P add-item --plan demo-plan --phase ph1 --id invalid --title Invalid --purpose invalid --verify-kind test --actor planner-agent --actor-type agent
 expect_die "item requires verification kind" \
-  P add-item --plan demo-plan --phase ph1 --id invalid --title Invalid --purpose invalid --file x:create
+  P add-item --plan demo-plan --phase ph1 --id invalid --title Invalid --purpose invalid --file x:create --actor planner-agent --actor-type agent
 
 P add-item --plan demo-plan --phase ph1 --id i1 --title Contract --purpose "modify contract" \
-  --verify-kind test --file packages/contracts/command.ts:modify >/dev/null
+  --verify-kind test --file packages/contracts/command.ts:modify --actor planner-agent --actor-type agent >/dev/null
 P add-item --plan demo-plan --phase ph1 --id i2 --title Gateway --purpose "create gateway" \
-  --depends-on i1 --verify-kind test --file apps/service/gateway.ts:modify >/dev/null
+  --depends-on i1 --verify-kind test --file apps/service/gateway.ts:modify --actor planner-agent --actor-type agent >/dev/null
 P add-item --plan demo-plan --phase ph1 --id i3 --title Review --purpose "review behavior" \
-  --depends-on i2 --verify-kind llm-review --no-file-impact >/dev/null
+  --depends-on i2 --verify-kind llm-review --no-file-impact --actor planner-agent --actor-type agent >/dev/null
 P add-item --plan demo-plan --phase ph1 --id i4 --title Marker --purpose "create marker" \
-  --depends-on i3 --verify-kind test --file marker.txt:create >/dev/null
+  --depends-on i3 --verify-kind test --file marker.txt:create --actor planner-agent --actor-type agent >/dev/null
 
 # Activation is human-only and rejects pre-existing dirty work.
 touch "$WORKDIR/preexisting.txt"
@@ -73,6 +82,24 @@ expect_die "dirty activation is rejected" \
 rm "$WORKDIR/preexisting.txt"
 expect_die "activation is human-only" \
   P transition --plan demo-plan --state active --reason approved
+expect_die "activation requires a passed independent plan review" \
+  P transition --plan demo-plan --state active --reason approved --actor-type human
+expect_die "planner cannot review their own plan" \
+  P review-plan --plan demo-plan --result pass --evidence self-review --actor planner-agent --actor-type agent
+expect_die "plan review requires an agent subagent" \
+  P review-plan --plan demo-plan --result pass --evidence human-review --actor human-reviewer --actor-type human
+expect_die "failed plan review requires a reason" \
+  P review-plan --plan demo-plan --result fail --evidence findings --actor reviewer-agent --actor-type agent
+P review-plan --plan demo-plan --result fail --evidence findings --reason "missing phase boundary" --actor reviewer-agent --actor-type agent >/dev/null
+PLAN_REVIEW_FAILED="$(python3 -c "import json;d=json.load(open('$WORKDIR/plans/demo-plan/plan.json'))['planReview'];print(d['status']+' / '+d['reviewer']+' / '+d['reason'])")"
+check "independent reviewer can record a failed review" "$PLAN_REVIEW_FAILED" "failed / reviewer-agent / missing phase boundary"
+P review-plan --plan demo-plan --result pass --evidence "complete draft" --actor reviewer-agent --actor-type agent >/dev/null
+P add-phase --plan demo-plan --id ph2 --title "Phase two" --purpose "prove review invalidation" --actor planner-agent --actor-type agent >/dev/null
+PLAN_REVIEW_RESET="$(python3 -c "import json;d=json.load(open('$WORKDIR/plans/demo-plan/plan.json'))['planReview'];print(d['status']+' / '+str(d['reviewer']))")"
+check "draft structure change invalidates completed review" "$PLAN_REVIEW_RESET" "pending / None"
+expect_die "invalidated review blocks activation" \
+  P transition --plan demo-plan --state active --reason approved --actor-type human
+P review-plan --plan demo-plan --result pass --evidence "re-reviewed complete draft" --actor reviewer-agent --actor-type agent >/dev/null
 P transition --plan demo-plan --state active --reason approved --actor-type human >/dev/null
 CURRENT="$(python3 -c "import json;d=json.load(open('$WORKDIR/plans/index.json'));e=d['plans'][0];print(d['currentPlanSlug']+' / '+e['state']+' / '+str(bool(e['baselineCommit'])))")"
 check "activation owns slot and captures baseline" "$CURRENT" "demo-plan / active / True"
@@ -119,7 +146,7 @@ check "planned-file issues clear when observations match" "$PLANNED_CLEAR" "0"
 echo "<!-- local marker -->" >> "$WORKDIR/plan-dashboard.html"
 
 # A paused plan keeps the current slot, so another draft cannot activate.
-P create --slug rival-plan --name Rival --goal rival >/dev/null
+P create --slug rival-plan --name Rival --goal rival --actor rival-planner --actor-type agent >/dev/null
 check "create does not overwrite an existing dashboard" \
   "$(grep -c 'local marker' "$WORKDIR/plan-dashboard.html")" "1"
 P install-dashboard >/dev/null
@@ -173,20 +200,26 @@ git -C "$SWITCHDIR" config user.email t@example.com
 git -C "$SWITCHDIR" config user.name t
 git -C "$SWITCHDIR" commit --allow-empty -qm baseline
 P2() { python3 "$PLANCTL" --root "$SWITCHDIR" "$@"; }
-P2 create --slug old-plan --name Old --goal old --activate --actor-type human >/dev/null
-P2 create --slug new-plan --name New --goal new >/dev/null
+P2 create --slug old-plan --name Old --goal old --actor old-planner --actor-type agent >/dev/null
+P2 review-plan --plan old-plan --result pass --evidence reviewed --actor old-reviewer --actor-type agent >/dev/null
+P2 transition --plan old-plan --state active --reason approved --actor-type human >/dev/null
+P2 create --slug unreviewed-plan --name Unreviewed --goal unreviewed --actor unreviewed-planner --actor-type agent >/dev/null
+expect_die "switch rejects an unreviewed target draft" \
+  P2 switch --to unreviewed-plan --reason replacement --actor-type human
+P2 create --slug new-plan --name New --goal new --actor new-planner --actor-type agent >/dev/null
+P2 review-plan --plan new-plan --result pass --evidence reviewed --actor new-reviewer --actor-type agent >/dev/null
 P2 switch --to new-plan --reason replacement --actor-type human >/dev/null
 SWITCHED="$(python3 -c "import json;d=json.load(open('$SWITCHDIR/plans/index.json'));m={e['slug']:e for e in d['plans']};print(d['currentPlanSlug']+' / '+m['old-plan']['state']+' / '+m['old-plan']['replacedBy'])")"
 check "switch terminates old plan and activates draft" "$SWITCHED" "new-plan / cancelled / new-plan"
 
-P2 create --slug draft-one --name One --goal one >/dev/null &
+P2 create --slug draft-one --name One --goal one --actor draft-one-planner --actor-type agent >/dev/null &
 PID_ONE=$!
-P2 create --slug draft-two --name Two --goal two >/dev/null &
+P2 create --slug draft-two --name Two --goal two --actor draft-two-planner --actor-type agent >/dev/null &
 PID_TWO=$!
 wait "$PID_ONE"
 wait "$PID_TWO"
 PLAN_COUNT="$(P2 validate | python3 -c "import json,sys;print(json.load(sys.stdin)['plans'])")"
-check "locked concurrent creates preserve both updates" "$PLAN_COUNT" "4"
+check "locked concurrent creates preserve both updates" "$PLAN_COUNT" "5"
 
 DASHBOARD="$SCRIPT_DIR/../assets/dashboard.html"
 GRAPH_CONTAINER="$(grep -c 'id="plan-graph"' "$DASHBOARD")"

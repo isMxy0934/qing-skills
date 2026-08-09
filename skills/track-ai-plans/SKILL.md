@@ -31,6 +31,7 @@ Every stored text field — plan `--goal`, item `--title`/`--purpose`, `--eviden
 - `plans/index.json` is the only lifecycle registry. It owns every plan's state, baseline, and `currentPlanSlug`; do not duplicate those fields in `plan.json`.
 - Keep at most one current plan. Both `active` and `paused` occupy `currentPlanSlug`; pausing does not make room for another resumable plan.
 - Create plans as `draft`. Capture `baselineCommit` only when activating, after Git is clean outside `plans/` and `plan-dashboard.html`.
+- A named planner subagent creates and edits a draft. Before activation, a different named reviewer subagent must pass `review-plan`; any draft structure change resets that approval.
 - Only `active` plans may update items, verify work, checkpoint, or mutate issues. Draft plans may only define phases, items, and documentation impact. Completed and cancelled plans are immutable.
 - Every item declares `--verify-kind test|llm-review|manual` and exactly one of: one or more `--file` values, or `--no-file-impact`.
 - Enter `in-progress` or `done` only after dependencies are done. Keep at most one item `in-progress`.
@@ -38,6 +39,7 @@ Every stored text field — plan `--goal`, item `--title`/`--purpose`, `--eviden
 - Treat `create`, `modify`, `delete`, and `move` as exact actions. A mismatched or missing planned change never satisfies completion.
 - Complete only when every item is done, every planned file is observed exactly, no off-plan change or open issue exists, and required documentation coverage passes.
 - Require `--actor-type human` for activation, pause, resume, completion, cancellation, and replacement.
+- Require `--actor-type agent --actor NAME` for draft planning and plan review. Use distinct, stable subagent names for the planner and reviewer so the audit trail can enforce independence.
 - Use `switch` only to terminate the current plan and activate a clean draft atomically. Use separate Git worktrees if resumable plans must execute in parallel.
 - Use `planctl.py` for every mutation. It holds `plans/.planctl.lock`, writes an event, updates the authoritative registry, and refreshes only the affected status snapshots.
 

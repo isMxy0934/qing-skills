@@ -53,6 +53,14 @@ States are `draft`, `active`, `paused`, `completed`, and `cancelled`. Exactly on
   "slug": "dashboard-migration",
   "goal": "Move dashboard writes to one command path",
   "owner": "joy.mu",
+  "planner": "planner-agent",
+  "planReview": {
+    "status": "passed",
+    "reviewer": "plan-reviewer-agent",
+    "evidence": "Dependencies, file actions, and verification criteria are complete",
+    "reason": null,
+    "reviewedAt": "ISO-8601"
+  },
   "createdAt": "ISO-8601",
   "updatedAt": "ISO-8601",
   "currentPhaseId": "phase-1",
@@ -100,6 +108,8 @@ States are `draft`, `active`, `paused`, `completed`, and `cancelled`. Exactly on
 ```
 
 Every item has a verification kind and exactly one file-impact mode: non-empty `plannedFiles`, or `noFileImpact: true`.
+
+`planner` is the named agent that authored the draft. `planReview` is `pending`, `passed`, or `failed`; a passed or failed review records a different named agent, evidence, and timestamp (and a failed review also records its reason). Any draft structure change — documentation impact, phase, or item — resets this object to `pending`. Only a draft with `planReview.status = passed` may activate, and activation still requires a human actor.
 
 ## Generated and frozen status
 
