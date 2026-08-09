@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "eventId": "2026-08-09T05-49-03.707375Z-item-updated-0af9ebcd",
+  "occurredAt": "2026-08-09T05:49:03.707375Z",
+  "type": "item-updated",
+  "planSlug": "review-gated-plans",
+  "actor": "phase-gate-implementer",
+  "actorType": "agent",
+  "details": {
+    "itemId": "phase-review-gate",
+    "status": "in-progress"
+  }
+}

@@ -7,7 +7,8 @@
    - `llm`: the model reviewed the artifact;
    - `human`: the user confirmed the result.
 4. A passing verification may mark an item done only when its dependencies are done.
-5. Verification does not override Git coverage. Completion independently rejects missing or mismatched planned files.
+5. `planctl.py` records the command actor as `completedBy` for each done item. Once every item in a phase is done, assign a different agent to review that phase; the reviewer cannot match any `completedBy` identity in the phase.
+6. Verification does not override Git coverage. Completion independently rejects missing or mismatched planned files.
 
 ```bash
 python3 scripts/planctl.py --root ROOT verify \
@@ -19,6 +20,12 @@ python3 scripts/planctl.py --root ROOT verify \
   --evidence "3 passed, 1 failed" \
   --reason "rollback leaves an outbox row" \
   --verified-by script
+
+python3 scripts/planctl.py --root ROOT review-phase \
+  --phase phase-1 --result fail \
+  --evidence "Boundary behavior still lacks coverage" \
+  --reason "Add the missing boundary test" \
+  --actor phase-reviewer-agent --actor-type agent
 
 python3 scripts/planctl.py --root ROOT changes
 ```

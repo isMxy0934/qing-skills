@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-09T05:49:03.598361Z",
+  "generatedAt": "2026-08-09T05:58:38.705568Z",
   "plan": {
     "slug": "review-gated-plans",
     "name": "移动端仪表盘与审查门禁",
@@ -12,43 +12,43 @@
     "currentPhaseId": "governance",
     "baselineCommit": "02113f0ea4fe606454b534821a0e9ef52eae313f",
     "replacedBy": null,
-    "updatedAt": "2026-08-09T05:49:03.558833Z"
+    "updatedAt": "2026-08-09T05:58:38.664303Z"
   },
   "execution": {
     "state": "idle",
     "currentItemId": null,
-    "lastCompletedItemId": "plan-peer-review",
+    "lastCompletedItemId": "phase-review-gate",
     "stopReason": null,
-    "updatedAt": "2026-08-09T05:49:03.558369Z"
+    "updatedAt": "2026-08-09T05:58:38.663819Z"
   },
   "summary": {
     "total": 5,
     "status": {
+      "failed": 0,
       "in-progress": 0,
       "blocked": 0,
-      "done": 3,
-      "not-started": 2,
-      "failed": 0
+      "done": 4,
+      "not-started": 1
     },
     "readiness": {
       "ready": 1,
-      "blocked": 1,
+      "blocked": 0,
       "in-progress": 0,
-      "done": 3,
+      "done": 4,
       "failed": 0
     },
     "verifiedBy": {
-      "script": 1,
+      "llm": 3,
       "human": 0,
-      "llm": 2,
-      "unverified": 2
+      "script": 1,
+      "unverified": 1
     },
     "openIssues": 1
   },
   "changeCoverage": {
     "planned": 17,
-    "observed": 13,
-    "pending": 4,
+    "observed": 15,
+    "pending": 2,
     "mismatched": 0,
     "unexpected": 0,
     "offPlanChanges": []
@@ -164,14 +164,25 @@
           ]
         }
       ],
+      "phaseReview": {
+        "status": "passed",
+        "reviewer": "legacy-plan",
+        "evidence": "legacy plan created before phase-review gates",
+        "reason": null,
+        "reviewedAt": null
+      },
+      "executionGate": {
+        "status": "open",
+        "blockedByPhaseIds": []
+      },
       "counts": {
         "total": 2,
         "status": {
+          "failed": 0,
           "in-progress": 0,
           "blocked": 0,
           "done": 2,
-          "not-started": 0,
-          "failed": 0
+          "not-started": 0
         }
       }
     },
@@ -273,10 +284,10 @@
           "dependsOn": [
             "plan-peer-review"
           ],
-          "status": "not-started",
+          "status": "done",
           "verifyKind": "test",
-          "verifiedBy": "unverified",
-          "evidence": null,
+          "verifiedBy": "llm",
+          "evidence": "独立复审通过：阶段审查锁、身份隔离、后续阶段阻塞、完成门禁与 plan-review 版本兼容均已验证；smoke_test 59 项通过。",
           "reason": null,
           "noFileImpact": false,
           "plannedFiles": [
@@ -311,8 +322,9 @@
               "from": null
             }
           ],
-          "updatedAt": "2026-08-09T05:25:08.118075Z",
-          "readiness": "ready",
+          "updatedAt": "2026-08-09T05:58:38.663725Z",
+          "completedBy": "phase-gate-reviewer",
+          "readiness": "done",
           "blockedBy": [],
           "changeObservations": [
             {
@@ -343,17 +355,17 @@
               "path": "skills/track-ai-plans/references/work-plan.md",
               "plannedAction": "modify",
               "plannedFrom": null,
-              "observedAction": null,
+              "observedAction": "modify",
               "observedFrom": null,
-              "observedState": "pending"
+              "observedState": "change-observed"
             },
             {
               "path": "skills/track-ai-plans/references/verify-plan.md",
               "plannedAction": "modify",
               "plannedFrom": null,
-              "observedAction": null,
+              "observedAction": "modify",
               "observedFrom": null,
-              "observedState": "pending"
+              "observedState": "change-observed"
             },
             {
               "path": "skills/track-ai-plans/references/schema.md",
@@ -391,10 +403,8 @@
             }
           ],
           "updatedAt": "2026-08-09T05:26:11.671817Z",
-          "readiness": "blocked",
-          "blockedBy": [
-            "phase-review-gate"
-          ],
+          "readiness": "ready",
+          "blockedBy": [],
           "changeObservations": [
             {
               "path": "skills/track-ai-plans/references/plan-lifecycle.md",
@@ -415,14 +425,25 @@
           ]
         }
       ],
+      "phaseReview": {
+        "status": "not-ready",
+        "reviewer": null,
+        "evidence": null,
+        "reason": null,
+        "reviewedAt": null
+      },
+      "executionGate": {
+        "status": "open",
+        "blockedByPhaseIds": []
+      },
       "counts": {
         "total": 3,
         "status": {
+          "failed": 0,
           "in-progress": 0,
           "blocked": 0,
-          "done": 1,
-          "not-started": 2,
-          "failed": 0
+          "done": 2,
+          "not-started": 1
         }
       }
     }
@@ -442,15 +463,9 @@
   "nextActions": [
     {
       "type": "item",
-      "id": "phase-review-gate",
-      "title": "增加阶段独立审查门禁",
-      "reason": "ready"
-    },
-    {
-      "type": "item",
       "id": "governance-docs",
       "title": "更新审查工作流文档",
-      "reason": "blocked"
+      "reason": "ready"
     },
     {
       "type": "issue",

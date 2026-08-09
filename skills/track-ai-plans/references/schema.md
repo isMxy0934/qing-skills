@@ -54,6 +54,7 @@ States are `draft`, `active`, `paused`, `completed`, and `cancelled`. Exactly on
   "goal": "Move dashboard writes to one command path",
   "owner": "joy.mu",
   "planner": "planner-agent",
+  "phaseReviewGatesEnabled": true,
   "planReview": {
     "status": "passed",
     "reviewer": "plan-reviewer-agent",
@@ -77,6 +78,13 @@ States are `draft`, `active`, `paused`, `completed`, and `cancelled`. Exactly on
       "id": "phase-1",
       "title": "Command foundation",
       "purpose": "Create the shared path",
+      "phaseReview": {
+        "status": "passed",
+        "reviewer": "phase-reviewer-agent",
+        "evidence": "Reviewed implementation, tests, and declared file actions",
+        "reason": null,
+        "reviewedAt": "ISO-8601"
+      },
       "items": [
         {
           "id": "p1-01",
@@ -86,6 +94,7 @@ States are `draft`, `active`, `paused`, `completed`, and `cancelled`. Exactly on
           "status": "not-started",
           "verifyKind": "test",
           "verifiedBy": "unverified",
+          "completedBy": null,
           "evidence": null,
           "reason": null,
           "noFileImpact": false,
@@ -108,6 +117,8 @@ States are `draft`, `active`, `paused`, `completed`, and `cancelled`. Exactly on
 ```
 
 Every item has a verification kind and exactly one file-impact mode: non-empty `plannedFiles`, or `noFileImpact: true`.
+
+New plans set `phaseReviewGatesEnabled: true`, so every phase has `phaseReview`. It is `not-ready` until all of its items are done, then `pending` until an independent agent records `passed` or `failed` evidence. The reviewer cannot equal any `completedBy` identity in that phase. An item in a later phase cannot enter `in-progress` or `done` until every previous phase review has passed. The generated status projection exposes each phase's `phaseReview` and `executionGate` (`open` or `blocked`, with the blocking phase IDs). Active or paused plans created before this field existed are treated as legacy: their absent phase reviews are passed, but new drafts are never allowed to omit the gate flag.
 
 `planner` is the named agent that authored the draft. `planReview` is `pending`, `passed`, or `failed`; a passed or failed review records a different named agent, evidence, and timestamp (and a failed review also records its reason). Any draft structure change — documentation impact, phase, or item — resets this object to `pending`. Only a draft with `planReview.status = passed` may activate, and activation still requires a human actor.
 

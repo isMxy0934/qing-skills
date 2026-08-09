@@ -57,10 +57,15 @@ check "draft has no current slot or baseline" "$INDEX_DRAFT" "None / None / draf
 check "create installs the dashboard automatically" "$(test -f "$WORKDIR/plan-dashboard.html" && echo yes || echo no)" "yes"
 PLAN_REVIEW_PENDING="$(python3 -c "import json;d=json.load(open('$WORKDIR/plans/demo-plan/plan.json'));print(d['planner']+' / '+d['planReview']['status'])")"
 check "draft records its planner and starts pending review" "$PLAN_REVIEW_PENDING" "planner-agent / pending"
+python3 -c "import json; p='$WORKDIR/plans/demo-plan/plan.json'; d=json.load(open(p)); d.pop('phaseReviewGatesEnabled'); open(p, 'w').write(json.dumps(d))"
+expect_die "new drafts require phase-review gate metadata" \
+  P validate
+python3 -c "import json; p='$WORKDIR/plans/demo-plan/plan.json'; d=json.load(open(p)); d['phaseReviewGatesEnabled']=True; open(p, 'w').write(json.dumps(d))"
 
 expect_die "only recorded planner can edit a draft" \
   P add-phase --plan demo-plan --id unauthorized --title Unauthorized --purpose invalid --actor other-agent --actor-type agent
 P add-phase --plan demo-plan --id ph1 --title "Phase one" --purpose "prove plan tracking" --actor planner-agent --actor-type agent >/dev/null
+P add-phase --plan demo-plan --id ph2 --title "Phase two" --purpose "prove phase-review gate" --actor planner-agent --actor-type agent >/dev/null
 expect_die "item requires file-impact declaration" \
   P add-item --plan demo-plan --phase ph1 --id invalid --title Invalid --purpose invalid --verify-kind test --actor planner-agent --actor-type agent
 expect_die "item requires verification kind" \
@@ -72,7 +77,7 @@ P add-item --plan demo-plan --phase ph1 --id i2 --title Gateway --purpose "creat
   --depends-on i1 --verify-kind test --file apps/service/gateway.ts:modify --actor planner-agent --actor-type agent >/dev/null
 P add-item --plan demo-plan --phase ph1 --id i3 --title Review --purpose "review behavior" \
   --depends-on i2 --verify-kind llm-review --no-file-impact --actor planner-agent --actor-type agent >/dev/null
-P add-item --plan demo-plan --phase ph1 --id i4 --title Marker --purpose "create marker" \
+P add-item --plan demo-plan --phase ph2 --id i4 --title Marker --purpose "create marker" \
   --depends-on i3 --verify-kind test --file marker.txt:create --actor planner-agent --actor-type agent >/dev/null
 
 # Activation is human-only and rejects pre-existing dirty work.
@@ -94,7 +99,9 @@ P review-plan --plan demo-plan --result fail --evidence findings --reason "missi
 PLAN_REVIEW_FAILED="$(python3 -c "import json;d=json.load(open('$WORKDIR/plans/demo-plan/plan.json'))['planReview'];print(d['status']+' / '+d['reviewer']+' / '+d['reason'])")"
 check "independent reviewer can record a failed review" "$PLAN_REVIEW_FAILED" "failed / reviewer-agent / missing phase boundary"
 P review-plan --plan demo-plan --result pass --evidence "complete draft" --actor reviewer-agent --actor-type agent >/dev/null
-P add-phase --plan demo-plan --id ph2 --title "Phase two" --purpose "prove review invalidation" --actor planner-agent --actor-type agent >/dev/null
+P set-documentation-impact --plan demo-plan --mode required --coverage all \
+  --target "docs/architecture/**:sync architecture" --target "docs/implementation/**:sync implementation" \
+  --actor planner-agent --actor-type agent >/dev/null
 PLAN_REVIEW_RESET="$(python3 -c "import json;d=json.load(open('$WORKDIR/plans/demo-plan/plan.json'))['planReview'];print(d['status']+' / '+str(d['reviewer']))")"
 check "draft structure change invalidates completed review" "$PLAN_REVIEW_RESET" "pending / None"
 expect_die "invalidated review blocks activation" \
@@ -109,25 +116,45 @@ expect_die "child cannot pass before dependency" \
   P verify --item i2 --result pass --evidence premature --verified-by script
 
 printf 'updated\n' > "$WORKDIR/packages/contracts/command.ts"
-P verify --item i1 --result pass --evidence "contract test passed" --verified-by script >/dev/null
+P verify --item i1 --result pass --evidence "contract test passed" --verified-by script --actor implementer-agent --actor-type agent >/dev/null
 
 # Off-plan changes are current-plan local and clear only when this plan claims them.
 touch "$WORKDIR/apps/service/sneaky.ts"
 OFF_BEFORE="$(P show | python3 -c "import json,sys;print(json.load(sys.stdin)['changeCoverage']['unexpected'])")"
 check "off-plan file is detected" "$OFF_BEFORE" "1"
 P update-item --item i1 --status done --evidence "contract test passed" --verified-by script \
-  --file apps/service/sneaky.ts:create >/dev/null
+  --file apps/service/sneaky.ts:create --actor implementer-agent --actor-type agent >/dev/null
 OFF_AFTER="$(P show | python3 -c "import json,sys;print(json.load(sys.stdin)['changeCoverage']['unexpected'])")"
 check "current item declaration clears off-plan file" "$OFF_AFTER" "0"
 
 # Exact action semantics: expected modify does not accept observed create.
 touch "$WORKDIR/apps/service/gateway.ts"
-P verify --item i2 --result pass --evidence "gateway test passed" --verified-by script >/dev/null
+P verify --item i2 --result pass --evidence "gateway test passed" --verified-by script --actor implementer-agent --actor-type agent >/dev/null
 MISMATCH="$(P show | python3 -c "import json,sys;d=json.load(sys.stdin);print(d['changeCoverage']['mismatched'])")"
 check "create does not satisfy modify" "$MISMATCH" "1"
 
-P verify --item i3 --result pass --evidence "reviewed" --verified-by llm >/dev/null
-P verify --item i4 --result pass --evidence "marker test passed" --verified-by script >/dev/null
+P verify --item i3 --result pass --evidence "reviewed" --verified-by llm --actor implementer-agent --actor-type agent >/dev/null
+PHASE_ONE_PENDING="$(P show | python3 -c "import json,sys;d=json.load(sys.stdin);p=d['phases'][0];print(p['phaseReview']['status']+' / '+p['executionGate']['status'])")"
+check "completed phase requests independent review" "$PHASE_ONE_PENDING" "pending / open"
+expect_die "unreviewed phase blocks subsequent phase" \
+  P update-item --item i4 --status in-progress --actor implementer-agent --actor-type agent
+expect_die "phase reviewer cannot review their own completed item" \
+  P review-phase --phase ph1 --result pass --evidence self-review --actor implementer-agent --actor-type agent
+expect_die "failed phase review requires a reason" \
+  P review-phase --phase ph1 --result fail --evidence findings --actor phase-reviewer-agent --actor-type agent
+P review-phase --phase ph1 --result fail --evidence findings --reason "need boundary check" --actor phase-reviewer-agent --actor-type agent >/dev/null
+PHASE_ONE_FAILED="$(P show | python3 -c "import json,sys;print(json.load(sys.stdin)['phases'][0]['phaseReview']['status'])")"
+check "failed phase review keeps the phase gate closed" "$PHASE_ONE_FAILED" "failed"
+expect_die "failed phase review still blocks subsequent phase" \
+  P update-item --item i4 --status in-progress --actor implementer-agent --actor-type agent
+P review-phase --phase ph1 --result pass --evidence "boundary checked" --actor phase-reviewer-agent --actor-type agent >/dev/null
+PHASE_TWO_GATE="$(P show | python3 -c "import json,sys;print(json.load(sys.stdin)['phases'][1]['executionGate']['status'])")"
+check "passed phase review opens the subsequent phase gate" "$PHASE_TWO_GATE" "open"
+P update-item --item i4 --status in-progress --actor implementer-agent --actor-type agent >/dev/null
+P verify --item i4 --result pass --evidence "marker test passed" --verified-by script --actor implementer-agent --actor-type agent >/dev/null
+expect_die "final phase cannot self-review" \
+  P review-phase --phase ph2 --result pass --evidence self-review --actor implementer-agent --actor-type agent
+P review-phase --phase ph2 --result pass --evidence "marker behavior checked" --actor phase-reviewer-agent --actor-type agent >/dev/null
 PLANNED_ISSUES="$(P show | python3 -c "import json,sys;d=json.load(sys.stdin);print(sum(i['type']=='planned-file-mismatch' for i in d['derivedIssues']))")"
 check "done-item mismatch and pending file surface as issues" "$PLANNED_ISSUES" "2"
 PLANNED_NEXT="$(P show | python3 -c "import json,sys;d=json.load(sys.stdin);print(sum(n['type']=='issue' and n['id'].startswith('derived-planned-file-mismatch-') for n in d['nextActions']))")"
@@ -137,7 +164,8 @@ expect_die "completion rejects mismatch and pending file" \
 
 # Correct the declaration and create the pending file.
 P update-item --item i2 --status done --evidence "gateway test passed" --verified-by script \
-  --file apps/service/gateway.ts:create >/dev/null
+  --file apps/service/gateway.ts:create --actor implementer-agent --actor-type agent >/dev/null
+P review-phase --phase ph1 --result pass --evidence "corrected declaration rechecked" --actor phase-reviewer-agent --actor-type agent >/dev/null
 touch "$WORKDIR/marker.txt"
 PLANNED_CLEAR="$(P show | python3 -c "import json,sys;d=json.load(sys.stdin);print(sum(i['type']=='planned-file-mismatch' for i in d['derivedIssues']))")"
 check "planned-file issues clear when observations match" "$PLANNED_CLEAR" "0"
@@ -191,6 +219,30 @@ EVENTS="$(P history --plan demo-plan | python3 -c "import json,sys;print(len(jso
 check "history command reads audit events" "$EVENTS" "True"
 P validate >/dev/null
 pass=$((pass + 1))
+
+# A plan-peer-review-era active plan has planner metadata but no phase gate
+# fields. It remains valid and treats its prior phases as passed, while new
+# drafts above still require phaseReviewGatesEnabled.
+LEGACYDIR="$WORKDIR/legacy-phase-gate-repo"
+mkdir -p "$LEGACYDIR"
+git -C "$LEGACYDIR" init -q
+git -C "$LEGACYDIR" config user.email t@example.com
+git -C "$LEGACYDIR" config user.name t
+git -C "$LEGACYDIR" commit --allow-empty -qm baseline
+P3() { python3 "$PLANCTL" --root "$LEGACYDIR" "$@"; }
+P3 create --slug legacy-plan --name Legacy --goal legacy --actor legacy-planner --actor-type agent >/dev/null
+P3 add-phase --plan legacy-plan --id legacy-1 --title One --purpose one --actor legacy-planner --actor-type agent >/dev/null
+P3 add-phase --plan legacy-plan --id legacy-2 --title Two --purpose two --actor legacy-planner --actor-type agent >/dev/null
+P3 add-item --plan legacy-plan --phase legacy-1 --id legacy-i1 --title One --purpose one --verify-kind manual --no-file-impact --actor legacy-planner --actor-type agent >/dev/null
+P3 add-item --plan legacy-plan --phase legacy-2 --id legacy-i2 --title Two --purpose two --verify-kind manual --no-file-impact --actor legacy-planner --actor-type agent >/dev/null
+P3 review-plan --plan legacy-plan --result pass --evidence reviewed --actor legacy-reviewer --actor-type agent >/dev/null
+P3 transition --plan legacy-plan --state active --reason approved --actor-type human >/dev/null
+python3 -c "import json; p='$LEGACYDIR/plans/legacy-plan/plan.json'; d=json.load(open(p)); d.pop('phaseReviewGatesEnabled'); [phase.pop('phaseReview') for phase in d['phases']]; [item.pop('completedBy') for phase in d['phases'] for item in phase['items']]; open(p, 'w').write(json.dumps(d))"
+LEGACY_VALID="$(P3 validate | python3 -c "import json,sys;print(json.load(sys.stdin)['valid'])")"
+check "legacy active plan without phase gates remains valid" "$LEGACY_VALID" "True"
+P3 update-item --item legacy-i2 --status in-progress --actor legacy-worker --actor-type agent >/dev/null
+LEGACY_GATE="$(P3 show | python3 -c "import json,sys;print(json.load(sys.stdin)['phases'][1]['executionGate']['status'])")"
+check "legacy phase is interpreted as passed for a later phase gate" "$LEGACY_GATE" "open"
 
 # Switch is terminal replacement, and the repository lock prevents lost updates.
 SWITCHDIR="$WORKDIR/switch-repo"

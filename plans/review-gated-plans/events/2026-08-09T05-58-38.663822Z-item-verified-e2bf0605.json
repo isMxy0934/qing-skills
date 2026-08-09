@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "eventId": "2026-08-09T05-58-38.663822Z-item-verified-e2bf0605",
+  "occurredAt": "2026-08-09T05:58:38.663822Z",
+  "type": "item-verified",
+  "planSlug": "review-gated-plans",
+  "actor": "phase-gate-reviewer",
+  "actorType": "agent",
+  "details": {
+    "itemId": "phase-review-gate",
+    "result": "pass",
+    "evidence": "独立复审通过：阶段审查锁、身份隔离、后续阶段阻塞、完成门禁与 plan-review 版本兼容均已验证；smoke_test 59 项通过。"
+  }
+}

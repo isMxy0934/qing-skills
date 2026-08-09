@@ -34,6 +34,7 @@ FILE_ACTIONS = {"create", "modify", "delete", "move"}
 VERIFY_SOURCES = {"script", "llm", "human"}
 VERIFY_KINDS = {"test", "llm-review", "manual"}
 PLAN_REVIEW_STATES = {"pending", "passed", "failed"}
+PHASE_REVIEW_STATES = {"not-ready", "pending", "passed", "failed"}
 DOC_MODES = {"required", "none"}
 DOC_COVERAGE = {"all", "any"}
 MUTATING_COMMANDS = {
@@ -42,6 +43,7 @@ MUTATING_COMMANDS = {
     "add-phase",
     "add-item",
     "review-plan",
+    "review-phase",
     "update-item",
     "verify",
     "checkpoint",
@@ -228,6 +230,65 @@ def find_item(plan: dict, item_id: str) -> tuple[dict, dict]:
             if item.get("id") == item_id:
                 return phase, item
     die(f"unknown item: {item_id}")
+
+
+def find_phase(plan: dict, phase_id: str) -> dict:
+    phase = next((value for value in plan.get("phases", []) if value.get("id") == phase_id), None)
+    if phase is None:
+        die(f"unknown phase: {phase_id}")
+    return phase
+
+
+def pending_phase_review(*, ready: bool = False) -> dict:
+    return {
+        "status": "pending" if ready else "not-ready",
+        "reviewer": None,
+        "evidence": None,
+        "reason": None,
+        "reviewedAt": None,
+    }
+
+
+def phase_review(phase: dict) -> dict:
+    """Return a phase review, treating pre-gate plans as already passed.
+
+    Plans activated before phase reviews existed remain executable. New plans
+    always persist this data when phases are created.
+    """
+    return phase.get("phaseReview") or {
+        "status": "passed",
+        "reviewer": "legacy-plan",
+        "evidence": "legacy plan created before phase-review gates",
+        "reason": None,
+        "reviewedAt": None,
+    }
+
+
+def refresh_phase_review(phase: dict) -> None:
+    """Invalidate an existing review and request one only after all work is done."""
+    items = phase.get("items", [])
+    phase["phaseReview"] = pending_phase_review(
+        ready=bool(items) and all(item.get("status") == "done" for item in items)
+    )
+
+
+def prior_phase_gate_blockers(plan: dict, phase: dict) -> list[str]:
+    phases = plan.get("phases", [])
+    try:
+        index = phases.index(phase)
+    except ValueError:  # pragma: no cover - phase always comes from plan content.
+        die(f"unknown phase: {phase.get('id')}")
+    return [
+        previous["id"]
+        for previous in phases[:index]
+        if phase_review(previous).get("status") != "passed"
+    ]
+
+
+def require_prior_phase_reviews(plan: dict, phase: dict) -> None:
+    blockers = prior_phase_gate_blockers(plan, phase)
+    if blockers:
+        die("phase is blocked pending passed reviews: " + ", ".join(blockers))
 
 
 def dependencies_done(plan: dict, item: dict) -> bool:
@@ -462,6 +523,43 @@ def validate_plan(entry: dict, plan: dict) -> list[str]:
     phase_ids = [phase.get("id") for phase in plan.get("phases", [])]
     if len(phase_ids) != len(set(phase_ids)):
         errors.append(f"{slug}: duplicate phase id")
+    # phaseReviewGatesEnabled distinguishes plans created after phase gates
+    # shipped from active/paused plans created by the earlier plan-peer-review
+    # release. The latter had planner/planReview but no phase fields, so they
+    # remain readable and executable as legacy-passed phases.
+    requires_phase_reviews = plan.get("phaseReviewGatesEnabled") is True
+    if entry.get("state") == "draft" and not requires_phase_reviews:
+        errors.append(f"{slug}: draft is missing phaseReviewGatesEnabled")
+    for phase in plan.get("phases", []):
+        review = phase.get("phaseReview")
+        if review is None and requires_phase_reviews:
+            errors.append(f"{slug}/{phase.get('id')}: missing phaseReview")
+            continue
+        if review is None:
+            continue
+        if not isinstance(review, dict) or review.get("status") not in PHASE_REVIEW_STATES:
+            errors.append(f"{slug}/{phase.get('id')}: invalid phaseReview")
+            continue
+        phase_done = bool(phase.get("items")) and all(item.get("status") == "done" for item in phase.get("items", []))
+        if review["status"] == "not-ready" and phase_done:
+            errors.append(f"{slug}/{phase.get('id')}: completed phase must request review")
+        if review["status"] in {"pending", "passed", "failed"} and not phase_done:
+            errors.append(f"{slug}/{phase.get('id')}: reviewed phase has unfinished items")
+        if review["status"] in {"not-ready", "pending"}:
+            if any(review.get(key) is not None for key in ("reviewer", "evidence", "reason", "reviewedAt")):
+                errors.append(f"{slug}/{phase.get('id')}: unreviewed phase must not retain reviewer evidence")
+        else:
+            if not isinstance(review.get("reviewer"), str) or not review.get("reviewer", "").strip():
+                errors.append(f"{slug}/{phase.get('id')}: reviewed phase requires reviewer")
+            if not review.get("evidence") or not review.get("reviewedAt"):
+                errors.append(f"{slug}/{phase.get('id')}: reviewed phase requires evidence and reviewedAt")
+            if review["status"] == "passed" and review.get("reason") is not None:
+                errors.append(f"{slug}/{phase.get('id')}: passed phaseReview must not retain a reason")
+            if review["status"] == "failed" and not review.get("reason"):
+                errors.append(f"{slug}/{phase.get('id')}: failed phaseReview requires a reason")
+            completed_by = {item.get("completedBy") for item in phase.get("items", []) if item.get("completedBy")}
+            if review.get("reviewer") in completed_by:
+                errors.append(f"{slug}/{phase.get('id')}: reviewer cannot review their own completed item")
     items = all_items(plan)
     ids = [item.get("id") for item in items]
     if len(ids) != len(set(ids)):
@@ -484,6 +582,8 @@ def validate_plan(entry: dict, plan: dict) -> list[str]:
                 errors.append(f"{slug}/{item_id}: done item has no evidence")
             if item.get("verifiedBy") not in VERIFY_SOURCES:
                 errors.append(f"{slug}/{item_id}: done item must declare verifiedBy")
+            if requires_phase_reviews and (not isinstance(item.get("completedBy"), str) or not item.get("completedBy", "").strip()):
+                errors.append(f"{slug}/{item_id}: done item must declare completedBy")
         if item.get("status") in {"failed", "blocked"} and not item.get("reason"):
             errors.append(f"{slug}/{item_id}: {item.get('status')} item has no reason")
         for file_entry in files:
@@ -619,9 +719,13 @@ def status_projection(entry: dict, plan: dict, root: Path) -> dict:
     verified_counts = {source: 0 for source in (*VERIFY_SOURCES, "unverified")}
     enriched_phases = []
     for phase in plan.get("phases", []):
+        blocked_by_reviews = prior_phase_gate_blockers(plan, phase)
         enriched_items = []
         for item in phase.get("items", []):
             readiness, blocked_by = item_readiness(item, items_by_id)
+            if readiness == "ready" and blocked_by_reviews:
+                readiness = "blocked"
+                blocked_by = [f"phase-review:{phase_id}" for phase_id in blocked_by_reviews]
             readiness_counts[readiness] = readiness_counts.get(readiness, 0) + 1
             verified_counts[item.get("verifiedBy", "unverified")] += 1
             enriched_items.append({
@@ -631,7 +735,16 @@ def status_projection(entry: dict, plan: dict, root: Path) -> dict:
                 "changeObservations": coverage["items"].get(item["id"], []),
             })
         counts = {state: sum(item["status"] == state for item in phase.get("items", [])) for state in ITEM_STATES}
-        enriched_phases.append({**phase, "items": enriched_items, "counts": {"total": len(phase.get("items", [])), "status": counts}})
+        enriched_phases.append({
+            **phase,
+            "phaseReview": phase_review(phase),
+            "executionGate": {
+                "status": "open" if not blocked_by_reviews else "blocked",
+                "blockedByPhaseIds": blocked_by_reviews,
+            },
+            "items": enriched_items,
+            "counts": {"total": len(phase.get("items", [])), "status": counts},
+        })
     open_issues = [issue for issue in plan.get("issues", []) if issue.get("status") == "open"]
     derived_issues = []
     failures_by_item: dict[str, dict] = {}
@@ -680,6 +793,14 @@ def status_projection(entry: dict, plan: dict, root: Path) -> dict:
         })
     next_actions = []
     for phase in enriched_phases:
+        review = phase["phaseReview"]
+        if review["status"] in {"pending", "failed"}:
+            next_actions.append({
+                "type": "phase-review",
+                "id": phase["id"],
+                "title": phase["title"],
+                "reason": review["status"],
+            })
         for item in phase["items"]:
             if item["readiness"] in {"failed", "blocked", "ready"} or item["status"] == "in-progress":
                 next_actions.append({"type": "item", "id": item["id"], "title": item["title"], "reason": item["readiness"]})
@@ -821,6 +942,7 @@ def cmd_create(args: argparse.Namespace, root: Path) -> dict:
         "owner": args.owner,
         "planner": args.actor,
         "planReview": pending_plan_review(),
+        "phaseReviewGatesEnabled": True,
         "createdAt": timestamp,
         "updatedAt": timestamp,
         "currentPhaseId": None,
@@ -857,7 +979,13 @@ def cmd_add_phase(args: argparse.Namespace, root: Path) -> dict:
         require_planner(args, plan, "add-phase on a draft")
     if any(phase["id"] == args.id for phase in plan["phases"]):
         die(f"phase already exists: {args.id}")
-    plan["phases"].append({"id": args.id, "title": args.title, "purpose": args.purpose, "items": []})
+    plan["phases"].append({
+        "id": args.id,
+        "title": args.title,
+        "purpose": args.purpose,
+        "phaseReview": pending_phase_review(),
+        "items": [],
+    })
     if plan["currentPhaseId"] is None:
         plan["currentPhaseId"] = args.id
     invalidated = invalidate_plan_review(plan) if entry["state"] == "draft" else False
@@ -891,6 +1019,7 @@ def cmd_add_item(args: argparse.Namespace, root: Path) -> dict:
         "status": "not-started",
         "verifyKind": args.verify_kind,
         "verifiedBy": "unverified",
+        "completedBy": None,
         "evidence": None,
         "reason": None,
         "noFileImpact": args.no_file_impact,
@@ -898,6 +1027,7 @@ def cmd_add_item(args: argparse.Namespace, root: Path) -> dict:
         "updatedAt": now(),
     }
     phase["items"].append(item)
+    refresh_phase_review(phase)
     invalidated = invalidate_plan_review(plan) if entry["state"] == "draft" else False
     event(root, entry["slug"], "item-added", args.actor, args.actor_type, {
         "phaseId": args.phase, "itemId": args.id, "planReviewInvalidated": invalidated,
@@ -926,9 +1056,38 @@ def cmd_review_plan(args: argparse.Namespace, root: Path) -> dict:
     return save_plan_content(root, index, entry, plan)
 
 
-def set_item_state(plan: dict, phase: dict, item: dict, state: str, evidence: str | None, reason: str | None, verified_by: str | None) -> None:
+def cmd_review_phase(args: argparse.Namespace, root: Path) -> dict:
+    index, entry, plan = selected_plan(args, root)
+    require_state(entry, {"active"}, "review-phase")
+    require_agent(args, "review-phase")
+    phase = find_phase(plan, args.phase)
+    if not phase.get("items") or any(item.get("status") != "done" for item in phase["items"]):
+        die("review-phase requires every item in the phase to be done")
+    if phase_review(phase).get("status") not in {"pending", "failed"}:
+        die("phase review is not pending")
+    completed_by = {item.get("completedBy") for item in phase["items"] if item.get("completedBy")}
+    if args.actor in completed_by:
+        die("review-phase requires an agent other than every completed-item agent in the phase")
+    if args.result == "fail" and not args.reason:
+        die("failed phase review requires --reason")
+    phase["phaseReview"] = {
+        "status": "passed" if args.result == "pass" else "failed",
+        "reviewer": args.actor,
+        "evidence": args.evidence,
+        "reason": args.reason if args.result == "fail" else None,
+        "reviewedAt": now(),
+    }
+    event(root, entry["slug"], "phase-reviewed", args.actor, args.actor_type, {
+        "phaseId": phase["id"], "result": args.result, "evidence": args.evidence, "reason": args.reason,
+    })
+    return save_plan_content(root, index, entry, plan)
+
+
+def set_item_state(plan: dict, phase: dict, item: dict, state: str, evidence: str | None, reason: str | None, verified_by: str | None, actor: str) -> None:
     if state in {"in-progress", "done"} and not dependencies_done(plan, item):
         die("item dependencies are not done")
+    if state in {"in-progress", "done"}:
+        require_prior_phase_reviews(plan, phase)
     if state == "in-progress":
         running = [value["id"] for value in all_items(plan) if value["status"] == "in-progress" and value["id"] != item["id"]]
         if running:
@@ -941,8 +1100,10 @@ def set_item_state(plan: dict, phase: dict, item: dict, state: str, evidence: st
     item["status"] = state
     item["evidence"] = evidence
     item["verifiedBy"] = verified_by or "unverified"
+    item["completedBy"] = actor if state == "done" else None
     item["reason"] = reason if state in {"failed", "blocked"} else None
     item["updatedAt"] = now()
+    refresh_phase_review(phase)
     plan["currentPhaseId"] = phase["id"]
     checkpoint = plan["checkpoint"]
     checkpoint["updatedAt"] = now()
@@ -960,7 +1121,7 @@ def cmd_update_item(args: argparse.Namespace, root: Path) -> dict:
     index, entry, plan = selected_plan(args, root)
     require_state(entry, {"active"}, "update-item")
     phase, item = find_item(plan, args.item)
-    set_item_state(plan, phase, item, args.status, args.evidence, args.reason, args.verified_by)
+    set_item_state(plan, phase, item, args.status, args.evidence, args.reason, args.verified_by, args.actor)
     for value in args.file or []:
         new_entry = parse_file_arg(value)
         existing = next((current for current in item["plannedFiles"] if current["path"] == new_entry["path"]), None)
@@ -981,7 +1142,7 @@ def cmd_verify(args: argparse.Namespace, root: Path) -> dict:
         event(root, entry["slug"], "item-verification-not-run", args.actor, args.actor_type, {"itemId": args.item, "evidence": args.evidence})
         return save_plan_content(root, index, entry, plan)
     state = "done" if args.result == "pass" else "failed"
-    set_item_state(plan, phase, item, state, args.evidence, args.reason, args.verified_by)
+    set_item_state(plan, phase, item, state, args.evidence, args.reason, args.verified_by, args.actor)
     event(root, entry["slug"], "item-verified", args.actor, args.actor_type, {"itemId": args.item, "result": args.result, "evidence": args.evidence})
     return save_plan_content(root, index, entry, plan)
 
@@ -1039,6 +1200,13 @@ def completion_problems(status: dict, plan: dict) -> list[str]:
     open_issues = [issue["id"] for issue in plan["issues"] if issue["status"] == "open"]
     if open_issues:
         problems.append(f"open issues={open_issues}")
+    unreviewed_phases = [
+        phase["id"]
+        for phase in plan.get("phases", [])
+        if phase_review(phase).get("status") != "passed"
+    ]
+    if unreviewed_phases:
+        problems.append(f"phase reviews not passed={unreviewed_phases}")
     if status["changeCoverage"]["unexpected"]:
         problems.append(f"unexpected changes={[c['path'] for c in status['changeCoverage']['offPlanChanges']]}")
     bad_files = [
@@ -1246,6 +1414,15 @@ def build_parser() -> argparse.ArgumentParser:
     review_plan.add_argument("--reason")
     add_actor_option(review_plan, require_actor=True)
     review_plan.set_defaults(handler=cmd_review_plan)
+
+    review_phase = sub.add_parser("review-phase")
+    add_plan_option(review_phase)
+    review_phase.add_argument("--phase", required=True)
+    review_phase.add_argument("--result", required=True, choices=["pass", "fail"])
+    review_phase.add_argument("--evidence", required=True)
+    review_phase.add_argument("--reason")
+    add_actor_option(review_phase, require_actor=True)
+    review_phase.set_defaults(handler=cmd_review_phase)
 
     update = sub.add_parser("update-item")
     add_plan_option(update)

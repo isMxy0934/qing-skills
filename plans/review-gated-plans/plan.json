@@ -4,7 +4,7 @@
   "goal": "改善手机端仪表盘体验，确保列表与依赖图一次只显示一种视图，并强制独立 subagent 审查计划和每个阶段后才可继续。",
   "owner": "codex",
   "createdAt": "2026-08-09T05:25:07.787761Z",
-  "updatedAt": "2026-08-09T05:49:03.558833Z",
+  "updatedAt": "2026-08-09T05:58:38.664303Z",
   "currentPhaseId": "governance",
   "documentationImpact": {
     "mode": "required",
@@ -135,10 +135,10 @@
           "dependsOn": [
             "plan-peer-review"
           ],
-          "status": "not-started",
+          "status": "done",
           "verifyKind": "test",
-          "verifiedBy": "unverified",
-          "evidence": null,
+          "verifiedBy": "llm",
+          "evidence": "独立复审通过：阶段审查锁、身份隔离、后续阶段阻塞、完成门禁与 plan-review 版本兼容均已验证；smoke_test 59 项通过。",
           "reason": null,
           "noFileImpact": false,
           "plannedFiles": [
@@ -173,7 +173,8 @@
               "from": null
             }
           ],
-          "updatedAt": "2026-08-09T05:25:08.118075Z"
+          "updatedAt": "2026-08-09T05:58:38.663725Z",
+          "completedBy": "phase-gate-reviewer"
         },
         {
           "id": "governance-docs",
@@ -202,14 +203,21 @@
           ],
           "updatedAt": "2026-08-09T05:26:11.671817Z"
         }
-      ]
+      ],
+      "phaseReview": {
+        "status": "not-ready",
+        "reviewer": null,
+        "evidence": null,
+        "reason": null,
+        "reviewedAt": null
+      }
     }
   ],
   "checkpoint": {
     "currentItemId": null,
-    "lastCompletedItemId": "plan-peer-review",
+    "lastCompletedItemId": "phase-review-gate",
     "stopReason": null,
-    "updatedAt": "2026-08-09T05:49:03.558369Z"
+    "updatedAt": "2026-08-09T05:58:38.663819Z"
   },
   "issues": []
 }
