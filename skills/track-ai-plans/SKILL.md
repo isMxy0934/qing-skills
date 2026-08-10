@@ -42,6 +42,7 @@ Every stored text field — plan `--goal`, item `--title`/`--purpose`, `--eviden
 - Require `--actor-type human` for activation, pause, resume, completion, cancellation, and replacement.
 - Require `--actor-type agent --actor NAME` for draft planning and plan review. Use distinct, stable subagent names for the planner and reviewer so the audit trail can enforce independence.
 - Require `--actor-type agent --actor NAME` for phase review too. `completedBy` records who completed each item so a phase cannot self-approve.
+- `planctl.py` can only check that the reviewer's `--actor` name differs from the planner or from every `completedBy` in the phase; it cannot check who actually ran the command. That name check is a guardrail, not the source of independence. Run `review-plan` and `review-phase` from a genuinely separate subagent invocation — a fresh Task/Agent call with no shared conversation history with the planner or the implementing agent. Never satisfy the gate by having the same context call itself again under a different `--actor` value; a same-context self-review passes the tool check but provides none of the independent judgment the gate exists for.
 - Use `switch` only to terminate the current plan and activate a clean draft atomically. Use separate Git worktrees if resumable plans must execute in parallel.
 - Use `planctl.py` for every mutation. It holds `plans/.planctl.lock`, writes an event, updates the authoritative registry, and refreshes only the affected status snapshots.
 
