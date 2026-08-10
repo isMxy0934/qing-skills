@@ -1,3 +1,16 @@
+## 3.2.0 - 2026-08-10
+
+### 新功能
+- track-ai-plans：草案计划激活前必须通过独立的 `review-plan`，审查者须是与 planner 不同的具名 agent
+- track-ai-plans：阶段内所有任务完成后,须由该阶段内非任何 completedBy 的 agent 通过 `review-phase`，后续阶段才能解除阻塞
+- track-ai-plans：仪表盘展示计划审查、阶段审查与执行门禁状态
+- track-ai-plans：优化仪表盘移动端布局
+- track-ai-plans：拒绝直接指向单个计划目录（而非 plans 存储根目录）的 `--root` 值
+
+### 文档
+- track-ai-plans：在技能说明与参考文档中解释独立审查门禁及其阻塞进度的方式
+- track-ai-plans：明确审查独立性要求由独立的 subagent 调用完成，而非在同一上下文中更换 `--actor` 名称
+
 ## 3.1.0 - 2026-08-08
 
 ### 新功能

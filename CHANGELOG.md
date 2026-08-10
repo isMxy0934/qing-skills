@@ -1,3 +1,16 @@
+## 3.2.0 - 2026-08-10
+
+### Features
+- track-ai-plans: Require a draft plan to pass an independent `review-plan` from a named agent other than the planner before it can activate
+- track-ai-plans: Gate a phase's items from entering a later phase until an agent other than every completed-item agent in that phase passes `review-phase`
+- track-ai-plans: Show plan review, phase review, and execution gate status in the read-only dashboard
+- track-ai-plans: Improve the dashboard's mobile layout
+- track-ai-plans: Reject a `--root` value that points directly at a single plan's directory instead of the plans store root
+
+### Documentation
+- track-ai-plans: Explain the independent review gates and how they block progress in skill instructions and reference docs
+- track-ai-plans: Clarify that reviewer independence requires a separate subagent invocation, not just a different `--actor` name within the same context
+
 ## 3.1.0 - 2026-08-08
 
 ### Features
