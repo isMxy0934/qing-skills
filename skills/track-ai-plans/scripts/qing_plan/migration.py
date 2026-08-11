@@ -65,9 +65,31 @@ def convert_legacy_plan(old: dict, entry: dict) -> dict:
     }
 
 
+def migrated_item_observations(item: dict) -> list[dict]:
+    # V1 required every declared file to match its planned action exactly before an item
+    # could be marked done, but only ever persisted that as a global count, never per file
+    # or per item. Restating "matched" for each file of a done item is not a new claim —
+    # it is the fact V1's own completion rule already established — placed into the shape
+    # the dashboard's Planned/Observed/Verified table expects. A non-done item (relevant
+    # for a migrated cancelled plan) gets no observations, so its files honestly read as
+    # not yet observed rather than falsely claiming a match V1 never verified.
+    if item.get("status") != "done":
+        return []
+    return [
+        {"path": file["path"], "moduleId": file.get("moduleId"), "reason": file.get("reason"),
+         "plannedAction": file["action"], "plannedFrom": file.get("from"),
+         "observedAction": file["action"], "observedFrom": file.get("from"), "observedState": "change-observed"}
+        for file in flatten_changes(item)
+    ]
+
+
 def migrated_frozen_status(entry: dict, plan: dict, old_status: dict | None, project_map: dict) -> dict:
     items = all_items(plan)
     map_view = project_map_projection(plan, project_map)
+    phases = [
+        {**phase, "items": [{**item, "observations": migrated_item_observations(item)} for item in phase.get("items", [])]}
+        for phase in plan.get("phases", [])
+    ]
     return {
         "schemaVersion": 2, "generatedAt": (old_status or {}).get("generatedAt") or plan.get("updatedAt"),
         "plan": {"slug": entry["slug"], "name": entry.get("name"), "goal": plan.get("goal"), "state": entry["state"],
@@ -77,7 +99,7 @@ def migrated_frozen_status(entry: dict, plan: dict, old_status: dict | None, pro
                     "changedModules": len(map_view["directModules"]), "affectedModules": len(map_view["affectedModules"])},
         "handoff": {**plan["checkpoint"], "portability": "unknown", "warnings": ["Migrated terminal snapshot; V1 attribution is preserved as unknown"],
                     "nextAction": {"type": "terminal", "message": entry["state"]}},
-        "phases": plan["phases"], "changeCoverage": (old_status or {}).get("changeCoverage", {}),
+        "phases": phases, "changeCoverage": (old_status or {}).get("changeCoverage", {}),
         "documentationImpact": (old_status or {}).get("documentationImpact", {}),
         "projectMap": map_view, "reviews": plan["reviews"], "amendments": [],
         "issues": plan["issues"], "derivedIssues": (old_status or {}).get("derivedIssues", []), "nextActions": [],

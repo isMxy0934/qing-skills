@@ -222,6 +222,9 @@ check "migrated store validates in the both-directory state" "$(L validate | pyt
 check "migration installs the viewer without any runtime" "$(test -f "$LEGACY/qing-plans/dashboard.html" && test ! -e "$LEGACY/qing-plans/planctl.py" && test ! -e "$LEGACY/qing-plans/qing_plan" && echo yes)" "yes"
 check "active V1 plan gets a resumable V2 status" "$(L resume | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d["plan"]["slug"],d["plan"]["state"],d["nextAction"]["type"])')" "active-plan active start-item"
 check "legacy fields convert without recomputing terminal status" "$(python3 -c "import json;p=json.load(open('$LEGACY/qing-plans/old-plan/plan.json'));s=json.load(open('$LEGACY/qing-plans/old-plan/status.json'));print(p['schemaVersion'],p['phases'][0]['items'][0]['changeSets'][0]['moduleId'],len(p['reviews']),s['generatedAt'])")" "2 _unmapped 1 2026-01-01T00:00:00Z"
+check "a migrated done item's frozen observation reads as matched, not pending" \
+  "$(python3 -c "import json;o=json.load(open('$LEGACY/qing-plans/old-plan/status.json'))['phases'][0]['items'][0]['observations'][0];print(o['path'],o['observedAction'],o['observedState'])")" \
+  "baseline.txt modify change-observed"
 check "migration manifest contains source hashes" "$(python3 -c "import json;m=json.load(open('$LEGACY/qing-plans/migration.json'));print(m['state'],m['safeToDeleteLegacy'],len(m['sourceFiles'])>0)")" "verified True True"
 python3 - "$LEGACY/qing-plans/migration.json" <<'PY'
 import json,sys
