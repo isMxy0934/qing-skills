@@ -38,9 +38,9 @@
     .path, .muted, .meta { color: var(--muted); }
     .path, .meta { font-size: 12px; }
     .actions { display: flex; gap: 9px; }
-    select, .button, .phase { min-height: 36px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); padding: 7px 10px; }
-    .button:hover, .phase:hover { background: var(--soft); }
-    .button[aria-pressed="true"], .phase[aria-pressed="true"] { color: var(--surface); background: var(--ink); border-color: var(--ink); }
+    select, .button { min-height: 36px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); padding: 7px 10px; }
+    .button:hover { background: var(--soft); }
+    .button[aria-pressed="true"] { color: var(--surface); background: var(--ink); border-color: var(--ink); }
     .content { background: var(--canvas); }
     .handoff { display: grid; grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(130px, .65fr)); gap: 1px; border-bottom: 1px solid var(--line); background: var(--line); }
     .handoff > div { min-width: 0; padding: 14px 17px; background: var(--surface); }
@@ -55,18 +55,127 @@
     .goal { max-width: 760px; color: var(--muted); }
     .pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 9px; background: var(--brand-soft); color: var(--brand); font-size: 12px; font-weight: 650; white-space: nowrap; }
     .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-    .phasebar { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 20px 16px; }
-    .phase { min-height: auto; border-radius: 999px; color: var(--muted); }
     .summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-block: 1px solid var(--line); background: var(--surface); }
     .summary > div { padding: 12px 18px; }
     .summary > div + div { border-left: 1px solid var(--line); }
     .label { color: var(--muted); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
     .value { margin-top: 1px; font-size: 20px; font-weight: 650; }
-    .workspace { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(300px, .7fr); min-height: 420px; border-bottom: 1px solid var(--line); }
+    .tasks-section { padding: 17px 19px 20px; border-bottom: 1px solid var(--line); background: var(--surface); }
+    .tasks-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .tasks-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .view-toggle { display: flex; gap: 6px; }
+    .tasks-actions button { min-height: 32px; padding: 6px 11px; border-radius: 8px; }
+    .phase-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-top: 12px; }
+    .phase-scope { width: 100%; height: 100%; min-width: 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--soft); color: inherit; text-align: left; font: inherit; cursor: pointer; }
+    .phase-scope:hover { background: var(--brand-soft); }
+    .phase-scope[aria-pressed="true"] { border-color: var(--brand); box-shadow: inset 0 0 0 1px var(--brand); background: var(--brand-soft); }
+    .phase-scope-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .phase-scope-title { min-width: 0; font-weight: 700; overflow-wrap: anywhere; }
+    .phase-scope-count { flex-shrink: 0; color: var(--muted); font-size: 11px; }
+    .phase-scope-impact { margin-top: 7px; color: var(--muted); font-size: 11.5px; }
+    .phase-scope-relations { display: grid; gap: 3px; margin-top: 7px; font-size: 11.5px; }
+    .phase-relation-label { color: var(--muted); }
+    .phase-relation-arrow { color: var(--brand); font-weight: 750; }
+    .phase-graph-section { margin-top: 12px; }
+    .graph-section-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 7px; }
+    .graph-section-title strong { font-size: 13px; }
+    .phase-graph-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--canvas); }
+    .phase-graph-wrap svg { width: auto; min-width: 560px; max-width: none; margin-inline: auto; }
+    .phase-node { cursor: pointer; outline: none; }
+    .phase-node rect { fill: var(--soft); stroke: var(--line); stroke-width: 1.5; rx: 10; }
+    .phase-node text { fill: var(--ink); pointer-events: none; }
+    .phase-node .node-index, .phase-node .node-meta, .phase-node .node-relations { fill: var(--muted); font-size: 10.5px; }
+    .phase-node .node-title { font-size: 13px; font-weight: 700; }
+    .phase-node.complete rect { stroke: var(--green); }
+    .phase-node.selected rect, .phase-node:focus rect { stroke: var(--brand); stroke-width: 3; fill: var(--brand-soft); }
+    .phase-edge { fill: none; stroke: color-mix(in srgb, var(--brand) 72%, var(--muted)); stroke-width: 2; }
+    .phase-task-graphs { display: grid; min-width: 0; gap: 12px; margin-top: 12px; }
+    .phase-task-graph { min-width: 0; max-width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--soft); }
+    .phase-task-graph.selected { border-color: var(--brand); }
+    .phase-task-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .phase-task-title { font-weight: 700; }
+    .phase-task-boundary { margin-top: 3px; color: var(--muted); font-size: 11.5px; overflow-wrap: anywhere; }
+    .phase-task-graph .task-graph-wrap { background: var(--surface); }
+    .phase-task-graph .task-graph-wrap svg { width: auto; min-width: 420px; max-width: none; margin-inline: auto; }
+    .phase-list { display: grid; gap: 8px; margin-top: 12px; }
+    .phase-card { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
+    .phase-summary { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: none; border: 0; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+    .phase-summary:hover { background: var(--soft); }
+    .phase-summary-title { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+    .phase-order { color: var(--muted); font-size: 12px; flex-shrink: 0; }
+    .phase-title { font-weight: 650; overflow-wrap: anywhere; }
+    .phase-summary-meta { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .phase-count { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .chevron { color: var(--muted); transition: transform .15s; }
+    .phase-card.open .chevron { transform: rotate(90deg); }
+    .phase-body { border-top: 1px solid var(--line); }
+    .task-row { display: grid; grid-template-columns: minmax(0, 1.3fr) 108px minmax(0, 1.1fr); gap: 12px; padding: 11px 14px; }
+    .task-row + .task-row { border-top: 1px solid var(--line); }
+    .task-title { font-weight: 650; overflow-wrap: anywhere; }
+    .task-purpose { margin-top: 2px; color: var(--muted); font-size: 12px; }
+    .task-deps, .task-files { font-size: 12px; color: var(--muted); }
+    .task-deps + .task-deps { margin-top: 3px; }
+    .state-done, .state-ready { color: var(--green); }
+    .state-in-progress { color: var(--blue); }
+    .state-blocked, .state-not-started { color: var(--amber); }
+    .state-failed { color: var(--red); }
+    .task-graph-wrap { width: 100%; max-width: 100%; margin-top: 12px; overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--canvas); }
+    .task-graph-meta { display: flex; flex-wrap: wrap; gap: 12px; padding: 10px 14px 0; color: var(--muted); font-size: 12px; }
+    .task-legend { display: flex; flex-wrap: wrap; gap: 13px; padding: 7px 14px 11px; color: var(--muted); font-size: 11.5px; }
+    .task-legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .legend-key { display: inline-block; width: 10px; height: 10px; border: 2px solid currentColor; border-radius: 3px; }
+    .legend-key.ready, .legend-key.done { color: var(--green); }
+    .legend-key.in-progress { color: var(--blue); }
+    .legend-key.blocked { color: var(--amber); }
+    .legend-key.failed { color: var(--red); }
+    .legend-key.current { color: var(--line); box-shadow: 0 0 0 2px var(--ink); }
+    .task-node { cursor: pointer; transition: opacity .15s; outline: none; }
+    .task-node:focus rect { stroke: var(--ink); stroke-width: 3; }
+    .task-node.scope-related { opacity: .72; }
+    .task-node.scope-muted { opacity: .28; }
+    .task-node.selected rect { stroke: var(--brand); stroke-width: 3; }
+    .task-node rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; rx: 8; }
+    .task-node text { fill: var(--ink); pointer-events: none; }
+    .task-node .node-id { fill: var(--muted); font-size: 9.5px; }
+    .task-node .node-title { font-size: 11.5px; font-weight: 700; }
+    .task-node .node-meta { fill: var(--muted); font-size: 10.5px; }
+    .task-node .node-status { font-size: 10.5px; font-weight: 700; }
+    .task-node.done rect, .task-node.ready rect { stroke: var(--green); }
+    .task-node.done .node-status, .task-node.ready .node-status { fill: var(--green); }
+    .task-node.in-progress rect { stroke: var(--blue); }
+    .task-node.in-progress .node-status { fill: var(--blue); }
+    .task-node.blocked rect, .task-node.not-started rect { stroke: var(--amber); stroke-dasharray: 5 3; }
+    .task-node.blocked .node-status, .task-node.not-started .node-status { fill: var(--amber); }
+    .task-node.failed rect { stroke: var(--red); }
+    .task-node.failed .node-status { fill: var(--red); }
+    .task-node.current rect { stroke-width: 3; }
+    .task-node.selected rect { stroke: var(--brand); stroke-width: 3; fill: var(--brand-soft); }
+    .task-edge { fill: none; stroke: color-mix(in srgb, var(--muted) 58%, transparent); stroke-width: 1.5; transition: opacity .15s; }
+    .task-edge.scope-related { opacity: .72; }
+    .task-edge.scope-muted { opacity: .2; }
+    .task-edge.blocked { stroke: var(--amber); stroke-dasharray: 5 4; }
+    .task-detail { margin-top: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--soft); outline: none; }
+    .task-detail:focus { box-shadow: inset 0 0 0 2px var(--brand); }
+    .task-detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .task-detail-title { font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
+    .task-detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+    .task-detail-block { min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); overflow-wrap: anywhere; }
+    .task-detail-block.wide { grid-column: span 2; }
+    .task-detail-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(340px, .75fr); align-items: start; min-height: 0; border-bottom: 1px solid var(--line); }
     .map-panel, .detail-panel, .section { padding: 17px 19px 20px; }
+    .map-panel, .detail-panel { min-width: 0; }
     .detail-panel { border-left: 1px solid var(--line); background: var(--soft); }
     h2 { margin: 0; font-size: 15px; }
-    .map-wrap { min-height: 340px; margin-top: 12px; overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--canvas); }
+    .map-wrap { margin-top: 12px; overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--canvas); }
+    .map-wrap svg { width: auto; min-width: 600px; max-width: none; margin-inline: auto; }
+    .module-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 300px)); gap: 9px; margin-top: 12px; }
+    .module-card { min-width: 0; padding: 13px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); color: inherit; text-align: left; font: inherit; cursor: pointer; }
+    .module-card:hover { background: var(--soft); }
+    .module-card[aria-pressed="true"] { border-color: var(--brand); box-shadow: inset 0 0 0 1px var(--brand); background: var(--blue-soft); }
+    .module-card-name { font-weight: 700; overflow-wrap: anywhere; }
+    .module-card-meta { margin-top: 4px; color: var(--muted); font-size: 11px; }
+    .scope-pill { display: inline-flex; max-width: min(520px, 55vw); padding: 4px 8px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); font-size: 11px; font-weight: 650; overflow-wrap: anywhere; }
     svg { display: block; min-width: 720px; width: 100%; }
     .edge { stroke: color-mix(in srgb, var(--muted) 58%, transparent); stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
     .node { cursor: pointer; }
@@ -80,7 +189,10 @@
     .legend i { display: inline-block; width: 10px; height: 10px; margin-right: 5px; border: 1px solid currentColor; border-radius: 3px; }
     .changed-key { color: var(--blue); } .affected-key { color: var(--amber); }
     .module-name { font-size: 19px; font-weight: 650; }
+    .module-detail-grid { display: grid; grid-template-columns: 1fr; }
     .module-block { padding: 11px 0; border-top: 1px solid var(--line); }
+    .module-block.scope-reason { color: var(--ink); font-weight: 550; }
+    .module-files { max-height: 220px; overflow: auto; }
     .relations { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .relation { padding: 9px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
     .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
@@ -100,12 +212,15 @@
     .footer { padding: 11px 18px; color: var(--muted); font-size: 11px; background: var(--soft); }
     .empty, .error { padding: 28px; color: var(--muted); text-align: center; }
     .error { color: var(--red); }
+    .task-graph-hint { display: none; }
     @media (max-width: 900px) {
       .handoff { grid-template-columns: 1fr 1fr; }
-      .workspace { grid-template-columns: 1fr; }
-      .detail-panel { border-top: 1px solid var(--line); border-left: 0; }
       .summary { grid-template-columns: repeat(2, 1fr); }
       .summary > div:nth-child(odd) { border-left: 0; }
+      .workspace { display: block; }
+      .detail-panel { border-top: 1px solid var(--line); border-left: 0; }
+      .task-detail-grid, .module-detail-grid { grid-template-columns: 1fr; }
+      .task-detail-block.wide, .module-files { grid-column: auto; }
     }
     @media (max-width: 620px) {
       .shell { width: 100%; margin: 0; border-radius: 0; }
@@ -113,7 +228,13 @@
       .actions, select { width: 100%; }
       .handoff, .audit-grid { grid-template-columns: 1fr; }
       .summary { grid-template-columns: 1fr 1fr; }
-      .map-panel, .detail-panel, .section { padding-inline: 13px; }
+      .map-panel, .detail-panel, .section, .tasks-section { padding-inline: 13px; }
+      .task-row { grid-template-columns: 1fr; }
+      .tasks-actions, .view-toggle { width: 100%; }
+      .tasks-actions > button, .view-toggle button { flex: 1; }
+      .phase-overview { display: flex; overflow-x: auto; scroll-snap-type: x proximity; }
+      .phase-overview > [role="listitem"] { flex: 0 0 280px; max-width: 82vw; scroll-snap-align: start; }
+      .task-graph-hint { display: block; color: var(--muted); font-size: 11.5px; padding: 8px 14px 0; }
     }
   </style>
 </head>
@@ -138,14 +259,33 @@
         legendChanged: 'Plan 直接修改', legendAffected: '上下游受影响', legendUnchanged: '项目全图未影响',
         pickModule: '选择模块查看详情', moduleResponsibility: '模块职责', noDescription: '尚未补充', noPathPattern: '无路径模式',
         mapReason: '建图原因：', evidence: '证据：', whyChanged: '为什么修改', noDirectChange: '当前范围没有直接修改',
+        introducedByPlan: '引入于：', updatedByPlan: '最近修改于：',
         upstream: '上游依赖', downstream: '下游消费者', none: '无', phaseFiles: '本阶段文件',
-        noFileImpactRow: '无文件影响', changesTitle: '阶段变更 · Planned / Observed / Verified',
+        noFileImpactRow: '无文件影响', changesTitle: '当前范围变更 · Planned / Observed / Verified',
         changesSubtitle: '文件、修改原因、实际观测与验证证据放在同一行', colModule: '模块', colPlannedFile: '计划文件',
         colWhy: '为什么修改', colObservedAction: '实际动作', colVerify: '验证', noFileDeclared: '本阶段没有文件声明',
         statusVerified: '已验证', statusObserved: '已观测', statusPending: '待完成', statusFailed: '失败',
         statusMismatched: '不一致', noVerification: '无验证记录', auditTitle: '范围变更与问题', allPhases: '全部阶段',
         noPlans: '还没有 Plan。', loadError: '无法读取 Qing Plans：', loadErrorHint: '请通过 HTTP 服务打开本文件，并运行 planctl.py refresh-status 刷新状态。',
         snapshot: '快照：', impactChanged: '已修改', impactAffected: '受影响', impactUnchanged: '未变化',
+        tasksTitle: '阶段与任务', listView: '列表', graphView: '依赖图', completedOf: '完成',
+        dependsOnLabel: '依赖：', blockedByLabel: '被卡住：', noDependency: '无前置依赖', noTasksInPhase: '这个阶段还没有任务',
+        stateDone: '已完成', stateInProgress: '进行中', stateBlocked: '被阻塞', stateFailed: '失败',
+        stateReady: '可以开始', stateNotStarted: '未开始', currentSuffix: ' · 当前',
+        taskGraphMeta: (n, e) => `${n} 个任务 · ${e} 条依赖`, taskGraphHint: '手机端可左右滑动查看完整依赖图',
+        taskGraphAria: '任务依赖图', noTasksYet: '这个 Plan 还没有任务', currentLabel: '当前任务',
+        phaseOverviewAria: 'Phase 关系与影响范围', phaseDependsOn: '依赖前序：', phaseAffects: '影响后续：',
+        phaseImpact: (m, f) => `${m} 个模块 · ${f} 个文件`, viewModeAria: '任务视图', allPhaseImpact: '显示全部 Phase 的聚合影响',
+        taskDetailAria: '任务详情', taskPurpose: '目的', taskUpstream: '前置任务', taskDownstream: '后续任务',
+        taskFilesLabel: '涉及文件', taskVerification: '最近验证', focusPhase: '聚焦所在 Phase', openTaskList: '查看 Phase 列表',
+        phaseGraphTitle: 'Phase 依赖关系', phaseGraphMeta: '先看阶段之间的前后关系，再看各阶段内部任务',
+        phaseTaskGraphTitle: '各 Phase 内任务关系', phaseTaskInternal: 'Phase 内任务',
+        crossPhaseIncoming: '跨 Phase 前置：', crossPhaseOutgoing: '跨 Phase 后续：',
+        impactScopeAll: '范围：全部 Phase', impactScopePhase: value => `范围：Phase · ${value}`,
+        impactScopeTask: value => `范围：任务 · ${value}`, currentScopeFiles: '当前范围文件',
+        whyInScope: '为什么出现在当前影响图中', directImpactReason: '当前范围直接修改此模块。',
+        affectedImpactReason: value => `${value || '它与直接修改模块存在依赖关系'}，因此被标记为受影响。`,
+        unchangedImpactReason: '此模块只在项目全图中作为未受影响的上下文出现。', dependsStatement: (a, b) => `${a} 依赖 ${b}`,
       },
       en: {
         selectPlanAria: 'Select plan', globalToggle: 'Global map', langToggle: '中文', loading: 'Loading plan data…',
@@ -157,28 +297,154 @@
         legendChanged: 'Directly changed by plan', legendAffected: 'Affected upstream/downstream', legendUnchanged: 'Unaffected in global map',
         pickModule: 'Select a module to see details', moduleResponsibility: 'Module responsibility', noDescription: 'Not documented yet', noPathPattern: 'No path patterns',
         mapReason: 'Boundary reason: ', evidence: 'Evidence: ', whyChanged: 'Why it changed', noDirectChange: 'No direct change in this scope',
+        introducedByPlan: 'Introduced by: ', updatedByPlan: 'Last touched by: ',
         upstream: 'Upstream', downstream: 'Downstream consumers', none: 'None', phaseFiles: 'Files in this phase',
-        noFileImpactRow: 'No file impact', changesTitle: 'Phase changes · Planned / Observed / Verified',
+        noFileImpactRow: 'No file impact', changesTitle: 'Current scope changes · Planned / Observed / Verified',
         changesSubtitle: 'File, reason, observed outcome, and verification evidence on one row', colModule: 'Module', colPlannedFile: 'Planned file',
         colWhy: 'Why it changed', colObservedAction: 'Observed action', colVerify: 'Verification', noFileDeclared: 'No files declared for this phase',
         statusVerified: 'Verified', statusObserved: 'Observed', statusPending: 'Pending', statusFailed: 'Failed',
         statusMismatched: 'Mismatched', noVerification: 'No verification record', auditTitle: 'Scope changes & issues', allPhases: 'All phases',
         noPlans: 'No plans yet.', loadError: 'Could not read Qing Plans: ', loadErrorHint: 'Serve this file over HTTP and run planctl.py refresh-status to refresh state.',
         snapshot: 'Snapshot: ', impactChanged: 'changed', impactAffected: 'affected', impactUnchanged: 'unchanged',
+        tasksTitle: 'Phases & tasks', listView: 'List', graphView: 'Dependency graph', completedOf: 'done',
+        dependsOnLabel: 'Depends on: ', blockedByLabel: 'Blocked by: ', noDependency: 'No dependency', noTasksInPhase: 'No tasks in this phase yet',
+        stateDone: 'Done', stateInProgress: 'In progress', stateBlocked: 'Blocked', stateFailed: 'Failed',
+        stateReady: 'Ready', stateNotStarted: 'Not started', currentSuffix: ' · current',
+        taskGraphMeta: (n, e) => `${n} task${n === 1 ? '' : 's'} · ${e} dependenc${e === 1 ? 'y' : 'ies'}`, taskGraphHint: 'Swipe to see the full dependency graph on mobile',
+        taskGraphAria: 'Task dependency graph', noTasksYet: 'This plan has no tasks yet', currentLabel: 'Current task',
+        phaseOverviewAria: 'Phase relationships and impact', phaseDependsOn: 'Upstream: ', phaseAffects: 'Affects: ',
+        phaseImpact: (m, f) => `${m} module${m === 1 ? '' : 's'} · ${f} file${f === 1 ? '' : 's'}`, viewModeAria: 'Task view', allPhaseImpact: 'Show the combined impact of every phase',
+        taskDetailAria: 'Task details', taskPurpose: 'Purpose', taskUpstream: 'Prerequisites', taskDownstream: 'Consumers',
+        taskFilesLabel: 'Files', taskVerification: 'Latest verification', focusPhase: 'Focus this phase', openTaskList: 'Open phase list',
+        phaseGraphTitle: 'Phase dependencies', phaseGraphMeta: 'Read phase flow first, then the task graph inside each phase',
+        phaseTaskGraphTitle: 'Task relationships by phase', phaseTaskInternal: 'Task in this phase',
+        crossPhaseIncoming: 'Cross-phase prerequisites: ', crossPhaseOutgoing: 'Cross-phase consumers: ',
+        impactScopeAll: 'Scope: all phases', impactScopePhase: value => `Scope: phase · ${value}`,
+        impactScopeTask: value => `Scope: task · ${value}`, currentScopeFiles: 'Files in current scope',
+        whyInScope: 'Why this module is in the current impact map', directImpactReason: 'The current scope changes this module directly.',
+        affectedImpactReason: value => `${value || 'It has a dependency relationship with a directly changed module'}, so it is marked as affected.`,
+        unchangedImpactReason: 'This module appears only as unaffected context in the global map.', dependsStatement: (a, b) => `${a} depends on ${b}`,
       },
     };
-    const state = { index: null, map: null, status: null, phase: 'all', selectedModule: null, global: false,
-      lang: localStorage.getItem('qing-plans-lang') === 'en' ? 'en' : 'zh' };
+    const state = { index: null, map: null, status: null, phase: 'all', focusedPhase: null, selectedItem: null, selectedModule: null, global: false,
+      lang: localStorage.getItem('qing-plans-lang') === 'en' ? 'en' : 'zh',
+      itemView: localStorage.getItem('qing-plans-item-view') === 'graph' ? 'graph' : 'list' };
     const t = key => STRINGS[state.lang][key];
     const $ = selector => document.querySelector(selector);
     const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
     const fmt = value => value ? new Date(value).toLocaleString() : '—';
     const fetchJson = async path => { const response = await fetch(`${path}?v=${Date.now()}`); if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`); return response.json(); };
     const impactLabel = impact => ({changed: t('impactChanged'), affected: t('impactAffected')})[impact] || t('impactUnchanged');
+    // A frozen status migrated before this field existed has no readiness/blockedBy;
+    // falling back to the item's own status keeps every older snapshot renderable.
+    const itemState = item => item.readiness || item.status;
+    const itemBlockers = item => item.blockedBy || [];
+    const stateLabel = value => ({done: t('stateDone'), 'in-progress': t('stateInProgress'), blocked: t('stateBlocked'),
+      failed: t('stateFailed'), ready: t('stateReady'), 'not-started': t('stateNotStarted')})[value] || value;
+    function allItems() {
+      return (state.status?.phases || []).flatMap(p => p.items || []);
+    }
+    function phaseCompletion(phase) {
+      const items = phase.items || [];
+      return {done: items.filter(i => i.status === 'done').length, total: items.length};
+    }
+    function phaseIdOfItem(itemId) {
+      return (state.status?.phases || []).find(p => (p.items || []).some(i => i.id === itemId))?.id || null;
+    }
+    function currentTaskId() {
+      const items = allItems();
+      const next = state.status?.handoff?.nextAction || state.status?.nextActions?.[0] || {};
+      if (next.id && items.some(i => i.id === next.id)) return next.id;
+      const handoffId = state.status?.handoff?.itemId;
+      if (handoffId && items.some(i => i.id === handoffId && i.status !== 'done')) return handoffId;
+      return items.find(i => i.status === 'in-progress')?.id
+        || items.find(i => i.status === 'failed' || i.status === 'blocked')?.id
+        || items.find(i => itemState(i) === 'ready')?.id
+        || items.find(i => i.status !== 'done')?.id
+        || null;
+    }
+    function currentPhaseId() {
+      return phaseIdOfItem(currentTaskId());
+    }
+    function phaseGraphProjection() {
+      if (state.status?.phaseGraph?.phases) return state.status.phaseGraph;
+      // Frozen snapshots created by an older runtime have no phaseGraph. Keep them
+      // readable by deriving the same shape client-side without changing the snapshot.
+      const phases = state.status?.phases || [], itemPhase = new Map();
+      phases.forEach(phase => (phase.items || []).forEach(item => itemPhase.set(item.id, phase.id)));
+      const dependencies = [];
+      phases.forEach(phase => (phase.items || []).forEach(item => (item.dependsOn || []).forEach(dep => {
+        const upstream = itemPhase.get(dep);
+        if (upstream && upstream !== phase.id && !dependencies.some(edge => edge.phaseId === phase.id && edge.dependsOn === upstream)) {
+          dependencies.push({phaseId: phase.id, dependsOn: upstream});
+        }
+      })));
+      return {dependencies, phases: phases.map((phase, order) => {
+        const items = phase.items || [], files = items.flatMap(itemFiles);
+        const modules = new Set(files.map(file => file.moduleId).filter(Boolean));
+        if (items.some(item => item.noFileImpact)) modules.add('_cross-cutting');
+        const internal = [], incoming = [], outgoing = [];
+        items.forEach(item => (item.dependsOn || []).forEach(dep => {
+          const edge = {itemId: item.id, dependsOn: dep}, fromPhaseId = itemPhase.get(dep);
+          (fromPhaseId === phase.id ? internal : incoming).push(fromPhaseId === phase.id ? edge : {...edge, fromPhaseId});
+        }));
+        items.forEach(item => phases.forEach(candidatePhase => (candidatePhase.items || []).forEach(consumer => {
+          if (candidatePhase.id !== phase.id && (consumer.dependsOn || []).includes(item.id)) {
+            outgoing.push({itemId: item.id, consumerId: consumer.id, toPhaseId: candidatePhase.id});
+          }
+        })));
+        return {id: phase.id, title: phase.title, order, itemIds: items.map(item => item.id),
+          completedItems: items.filter(item => item.status === 'done').length, totalItems: items.length,
+          moduleIds: [...modules].sort(), fileCount: files.length,
+          dependsOn: dependencies.filter(edge => edge.phaseId === phase.id).map(edge => edge.dependsOn),
+          affects: dependencies.filter(edge => edge.dependsOn === phase.id).map(edge => edge.phaseId),
+          taskGraph: {nodes: items.map((item, itemOrder) => ({itemId: item.id, title: item.title, status: item.status, order: itemOrder})),
+            dependencies: internal, incomingDependencies: incoming, outgoingDependencies: outgoing}};
+      })};
+    }
+    function phaseRelationshipMap() {
+      return new Map(phaseGraphProjection().phases.map(phase => [phase.id, {
+        upstream: new Set(phase.dependsOn || []), downstream: new Set(phase.affects || [])
+      }]));
+    }
+    function relatedPhaseScope(phaseId) {
+      if (!phaseId || phaseId === 'all') return {upstream: new Set(), downstream: new Set(), relevant: new Set()};
+      const relations = phaseRelationshipMap(), upstream = new Set(), downstream = new Set();
+      const walk = (id, direction, found) => {
+        for (const next of relations.get(id)?.[direction] || []) {
+          if (found.has(next)) continue;
+          found.add(next); walk(next, direction, found);
+        }
+      };
+      walk(phaseId, 'upstream', upstream); walk(phaseId, 'downstream', downstream);
+      return {upstream, downstream, relevant: new Set([phaseId, ...upstream, ...downstream])};
+    }
+    function phaseImpact(phase) {
+      const projected = phaseGraphProjection().phases.find(value => value.id === phase.id);
+      return {modules: projected?.moduleIds?.length || 0, files: projected?.fileCount || 0};
+    }
+    function fitLabel(value, maxUnits = 24) {
+      const chars = Array.from(String(value ?? '')); let units = 0, result = '';
+      for (const char of chars) {
+        const width = /[^\u0000-\u00ff]/u.test(char) ? 2 : 1;
+        if (units + width > maxUnits) return `${result}…`;
+        result += char; units += width;
+      }
+      return result;
+    }
 
     function phaseItems() {
       const phases = state.status?.phases || [];
       return (state.phase === 'all' ? phases : phases.filter(p => p.id === state.phase)).flatMap(p => p.items || []);
+    }
+    function impactItems() {
+      const selected = allItems().find(item => item.id === state.selectedItem);
+      return selected ? [selected] : phaseItems();
+    }
+    function impactScopeLabel() {
+      if (state.selectedItem) return t('impactScopeTask')(state.selectedItem);
+      if (state.phase !== 'all') return t('impactScopePhase')(phaseTitleById(state.phase));
+      return t('impactScopeAll');
     }
     function itemFiles(item) {
       return (item.changeSets || []).flatMap(set => (set.files || []).map(file => ({...file, moduleId: set.moduleId, reason: set.reason})));
@@ -193,6 +459,163 @@
       if (passed && observation?.observedState === 'change-observed') return ['verified', t('statusVerified')];
       if (observation?.observedState === 'change-observed') return ['observed', t('statusObserved')];
       return ['pending', t('statusPending')];
+    }
+    function phaseTitleOf(itemId) {
+      return (state.status.phases || []).find(p => (p.items || []).some(i => i.id === itemId))?.title || '';
+    }
+    function phaseTitleById(phaseId) {
+      return (state.status?.phases || []).find(phase => phase.id === phaseId)?.title || phaseId;
+    }
+    function phaseGraphLayout() {
+      const phases = phaseGraphProjection().phases || [], byId = new Map(phases.map(phase => [phase.id, phase])), memo = new Map();
+      const depth = (id, visiting = new Set()) => {
+        if (memo.has(id)) return memo.get(id);
+        if (visiting.has(id)) return 0;
+        visiting.add(id);
+        const upstream = (byId.get(id)?.dependsOn || []).filter(dep => byId.has(dep));
+        const value = upstream.length ? 1 + Math.max(...upstream.map(dep => depth(dep, visiting))) : 0;
+        visiting.delete(id); memo.set(id, value); return value;
+      };
+      const layers = [];
+      phases.forEach(phase => (layers[depth(phase.id)] ||= []).push(phase));
+      layers.forEach(layer => layer.sort((a, b) => a.order - b.order));
+      return {phases, byId, layers};
+    }
+    function renderPhaseOverview() {
+      const {phases, byId, layers} = phaseGraphLayout();
+      if (!phases.length) return '';
+      const NODE_W = 240, NODE_H = 100, X_GAP = 62, Y_GAP = 28, PAD = 28;
+      const maxRows = Math.max(...layers.map(layer => layer.length));
+      const width = PAD * 2 + layers.length * NODE_W + Math.max(0, layers.length - 1) * X_GAP;
+      const height = PAD * 2 + maxRows * NODE_H + Math.max(0, maxRows - 1) * Y_GAP;
+      const pos = new Map();
+      layers.forEach((layer, layerIndex) => {
+        const used = layer.length * NODE_H + Math.max(0, layer.length - 1) * Y_GAP;
+        const top = PAD + Math.max(0, (height - PAD * 2 - used) / 2);
+        layer.forEach((phase, row) => pos.set(phase.id, {x: PAD + layerIndex * (NODE_W + X_GAP), y: top + row * (NODE_H + Y_GAP)}));
+      });
+      const edges = (phaseGraphProjection().dependencies || []).map(edge => {
+        const from = pos.get(edge.dependsOn), to = pos.get(edge.phaseId);
+        if (!from || !to) return '';
+        const x1 = from.x + NODE_W, y1 = from.y + NODE_H / 2, x2 = to.x, y2 = to.y + NODE_H / 2, mid = x1 + (x2 - x1) / 2;
+        return `<path class="phase-edge" d="M ${x1} ${y1} C ${mid} ${y1}, ${mid} ${y2}, ${x2} ${y2}" marker-end="url(#phase-arrow)"/>`;
+      }).join('');
+      const nodes = phases.map(phase => {
+        const p = pos.get(phase.id), upstream = (phase.dependsOn || []).map(phaseTitleById), downstream = (phase.affects || []).map(phaseTitleById);
+        const aria = `${phase.title} · ${phase.completedItems}/${phase.totalItems} · ${t('phaseDependsOn')}${upstream.join('、') || t('none')} · ${t('phaseAffects')}${downstream.join('、') || t('none')}`;
+        const complete = phase.totalItems > 0 && phase.completedItems === phase.totalItems;
+        return `<g class="phase-node${complete ? ' complete' : ''}${state.focusedPhase === phase.id ? ' selected' : ''}" data-phase-toggle="${esc(phase.id)}" role="button" tabindex="0" aria-pressed="${state.focusedPhase === phase.id}" aria-label="${esc(aria)}" transform="translate(${p.x},${p.y})"><title>${esc(aria)}</title><rect width="${NODE_W}" height="${NODE_H}"/><g clip-path="url(#phase-label-clip)"><text class="node-index" x="13" y="18">Phase ${phase.order + 1}</text><text class="node-title" x="13" y="40">${esc(fitLabel(phase.title, 26))}</text><text class="node-meta" x="13" y="61">${esc(`${phase.completedItems}/${phase.totalItems} · ${t('phaseImpact')(phase.moduleIds?.length || 0, phase.fileCount || 0)}`)}</text><text class="node-relations" x="13" y="82">${esc(`← ${upstream.join('、') || t('none')} · → ${downstream.join('、') || t('none')}`)}</text></g></g>`;
+      }).join('');
+      return `<div class="phase-graph-section"><div class="graph-section-title"><strong>${esc(t('phaseGraphTitle'))}</strong><span class="meta">${esc(t('phaseGraphMeta'))}</span></div><div class="phase-graph-wrap"><svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="group" aria-label="${esc(t('phaseOverviewAria'))}"><defs><marker id="phase-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/></marker><clipPath id="phase-label-clip"><rect x="10" y="5" width="${NODE_W - 20}" height="90"/></clipPath></defs>${edges}${nodes}</svg></div></div>`;
+    }
+    function renderTaskRow(item) {
+      const deps = item.dependsOn || [], blockers = itemBlockers(item), files = itemFiles(item), s = itemState(item);
+      return `<div class="task-row">
+        <div><div class="task-title">${esc(item.id)} · ${esc(item.title)}</div><div class="task-purpose">${esc(item.purpose)}</div></div>
+        <div><span class="status state-${esc(s)}">${esc(stateLabel(s))}</span>${blockers.length ? `<div class="task-deps state-blocked">${esc(t('blockedByLabel'))}${esc(blockers.join('、'))}</div>` : ''}</div>
+        <div><div class="task-deps">${esc(t('dependsOnLabel'))}${deps.length ? esc(deps.join('、')) : esc(t('noDependency'))}</div><div class="task-files">${files.length ? files.map(f => `<code>${esc(f.path)}</code> · ${esc(f.action)}`).join('<br>') : (item.noFileImpact ? esc(t('noFileImpactRow')) : '')}</div></div>
+      </div>`;
+    }
+    function renderPhaseCard(phase, index) {
+      const isOpen = state.phase === 'all' || state.phase === phase.id, {done, total} = phaseCompletion(phase), items = phase.items || [];
+      return `<div class="phase-card${isOpen ? ' open' : ''}">
+        <button class="phase-summary" type="button" data-phase-toggle="${esc(phase.id)}" aria-expanded="${isOpen}">
+          <span class="phase-summary-title"><span class="phase-order">${index + 1}</span><span class="phase-title">${esc(phase.title)}</span></span>
+          <span class="phase-summary-meta"><span class="phase-count">${done}/${total} ${esc(t('completedOf'))}</span><span class="chevron" aria-hidden="true">›</span></span>
+        </button>
+        ${isOpen ? `<div class="phase-body">${items.length ? items.map(renderTaskRow).join('') : `<div class="empty">${esc(t('noTasksInPhase'))}</div>`}</div>` : ''}
+      </div>`;
+    }
+    function renderPhaseCards() {
+      const phases = state.status.phases || [];
+      if (!phases.length) return `<div class="empty">${esc(t('noTasksYet'))}</div>`;
+      return `<div class="phase-list">${phases.map((phase, index) => renderPhaseCard(phase, index)).join('')}</div>`;
+    }
+    function taskGraphLayout(phase, graphPhase) {
+      const items = phase.items || [], byId = new Map(items.map(item => [item.id, item])), depthMemo = new Map();
+      const dependencies = graphPhase?.taskGraph?.dependencies || items.flatMap(item => (item.dependsOn || []).filter(dep => byId.has(dep)).map(dep => ({itemId: item.id, dependsOn: dep})));
+      const depsByItem = new Map(items.map(item => [item.id, dependencies.filter(edge => edge.itemId === item.id).map(edge => edge.dependsOn)]));
+      const depth = (id, visiting = new Set()) => {
+        if (depthMemo.has(id)) return depthMemo.get(id);
+        if (visiting.has(id)) return 0;
+        visiting.add(id);
+        const deps = depsByItem.get(id) || [], value = deps.length ? 1 + Math.max(...deps.map(dep => depth(dep, visiting))) : 0;
+        visiting.delete(id); depthMemo.set(id, value); return value;
+      };
+      const order = new Map((graphPhase?.taskGraph?.nodes || []).map(node => [node.itemId, node.order]));
+      const layers = [];
+      items.forEach(item => (layers[depth(item.id)] ||= []).push(item));
+      layers.forEach(layer => layer.sort((a, b) => (order.get(a.id) ?? items.indexOf(a)) - (order.get(b.id) ?? items.indexOf(b))));
+      return {items, byId, dependencies, layers};
+    }
+    function renderTaskGraph(phase, phaseIndex) {
+      const graphPhase = phaseGraphProjection().phases.find(value => value.id === phase.id) || {};
+      const {items, byId, dependencies, layers} = taskGraphLayout(phase, graphPhase);
+      if (!items.length) return `<div class="empty">${esc(t('noTasksInPhase'))}</div>`;
+      const incoming = graphPhase.taskGraph?.incomingDependencies || [], outgoing = graphPhase.taskGraph?.outgoingDependencies || [];
+      const NODE_W = 190, NODE_H = 86, X_GAP = 56, Y_GAP = 30, PAD_X = 30, PAD_Y = 30;
+      const maxRows = Math.max(...layers.map(layer => layer.length));
+      const width = PAD_X * 2 + layers.length * NODE_W + Math.max(0, layers.length - 1) * X_GAP;
+      const height = PAD_Y * 2 + maxRows * NODE_H + Math.max(0, maxRows - 1) * Y_GAP;
+      const pos = new Map();
+      layers.forEach((layer, layerIndex) => {
+        const used = layer.length * NODE_H + Math.max(0, layer.length - 1) * Y_GAP;
+        const top = PAD_Y + Math.max(0, (height - PAD_Y * 2 - used) / 2);
+        layer.forEach((item, row) => pos.set(item.id, {x: PAD_X + layerIndex * (NODE_W + X_GAP), y: top + row * (NODE_H + Y_GAP)}));
+      });
+      const markerId = `task-arrow-${phaseIndex}`, clipId = `task-label-clip-${phaseIndex}`;
+      const edges = dependencies.map(edge => {
+        const from = pos.get(edge.dependsOn), to = pos.get(edge.itemId), target = byId.get(edge.itemId);
+        if (!from || !to) return '';
+        const x1 = from.x + NODE_W, y1 = from.y + NODE_H / 2, x2 = to.x, y2 = to.y + NODE_H / 2, mid = x1 + (x2 - x1) / 2;
+        const blocked = itemState(target) === 'blocked' && byId.get(edge.dependsOn)?.status !== 'done';
+        return `<path class="task-edge${blocked ? ' blocked' : ''}" d="M ${x1} ${y1} C ${mid} ${y1}, ${mid} ${y2}, ${x2} ${y2}" marker-end="url(#${markerId})"/>`;
+      }).join('');
+      const currentId = currentTaskId(), incomingTargets = new Set(incoming.map(edge => edge.itemId));
+      const nodes = items.map(item => {
+        const p = pos.get(item.id), status = itemState(item), isCurrent = item.id === currentId;
+        const boundary = incomingTargets.has(item.id) ? t('crossPhaseIncoming').replace(/[：:]\s*$/, '') : t('phaseTaskInternal');
+        const aria = `${item.id} · ${item.title} · ${phase.title} · ${stateLabel(status)}${isCurrent ? t('currentSuffix') : ''}`;
+        return `<g class="task-node ${esc(status)}${isCurrent ? ' current' : ''}${item.id === state.selectedItem ? ' selected' : ''}" data-item="${esc(item.id)}" role="button" tabindex="0" aria-label="${esc(aria)}" transform="translate(${p.x},${p.y})"><title>${esc(aria)}</title><rect width="${NODE_W}" height="${NODE_H}"/><g clip-path="url(#${clipId})"><text class="node-id" x="12" y="17">${esc(fitLabel(item.id, 28))}</text><text class="node-title" x="12" y="36">${esc(fitLabel(item.title, 24))}</text><text class="node-meta" x="12" y="55">${esc(fitLabel(boundary, 25))}</text></g><text class="node-status" x="12" y="75">${esc(stateLabel(status))}${isCurrent ? esc(t('currentSuffix')) : ''}</text></g>`;
+      }).join('');
+      const incomingText = incoming.map(edge => `${edge.dependsOn} → ${edge.itemId}`).join('、');
+      const outgoingText = outgoing.map(edge => `${edge.itemId} → ${edge.consumerId}`).join('、');
+      const boundary = `${incomingText ? `${t('crossPhaseIncoming')}${incomingText}` : ''}${incomingText && outgoingText ? ' · ' : ''}${outgoingText ? `${t('crossPhaseOutgoing')}${outgoingText}` : ''}`;
+      return `<section class="phase-task-graph${state.phase === phase.id ? ' selected' : ''}" data-phase-task-graph="${esc(phase.id)}"><div class="phase-task-head"><div><div class="phase-task-title">Phase ${phaseIndex + 1} · ${esc(phase.title)}</div><div class="phase-task-boundary">${esc(boundary || t('phaseTaskInternal'))}</div></div><span class="meta">${esc(t('taskGraphMeta')(items.length, dependencies.length))}</span></div><div class="task-graph-hint">${esc(t('taskGraphHint'))}</div><div class="task-graph-wrap"><svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="group" aria-label="${esc(`${phase.title} · ${t('taskGraphAria')}`)}"><defs><marker id="${markerId}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/></marker><clipPath id="${clipId}"><rect x="10" y="5" width="${NODE_W - 20}" height="55"/></clipPath></defs>${edges}${nodes}</svg></div></section>`;
+    }
+    function renderPhaseTaskGraphs() {
+      const phases = state.status?.phases || [], focusedId = state.focusedPhase || (state.phase !== 'all' ? state.phase : null) || currentPhaseId() || phases[0]?.id;
+      const focused = phases.find(phase => phase.id === focusedId) || phases[0];
+      if (!focused) return '';
+      const legend = [['ready', 'stateReady'], ['in-progress', 'stateInProgress'], ['blocked', 'stateBlocked'], ['done', 'stateDone'], ['failed', 'stateFailed'], ['current', 'currentLabel']]
+        .map(([cls, key]) => `<span><i class="legend-key ${cls}"></i>${esc(t(key))}</span>`).join('');
+      return `<div class="graph-section-title"><strong>${esc(t('phaseTaskGraphTitle'))}</strong><span class="meta">${esc(focused.title)}</span></div><div class="task-legend">${legend}</div><div class="phase-task-graphs">${renderTaskGraph(focused, phases.indexOf(focused))}</div>`;
+    }
+    function renderTaskDetail() {
+      const item = allItems().find(value => value.id === state.selectedItem);
+      if (!item) return '';
+      const phaseId = phaseIdOfItem(item.id), phaseTitle = phaseTitleOf(item.id), files = itemFiles(item), blockers = itemBlockers(item);
+      const consumers = allItems().filter(value => (value.dependsOn || []).includes(item.id)).map(value => value.id);
+      const latest = (item.verificationAttempts || []).at(-1);
+      const fileRows = files.length ? files.map(file => `<div><code>${esc(file.path)}</code> · ${esc(file.action)}</div>`).join('')
+        : esc(item.noFileImpact ? t('noFileImpactRow') : t('none'));
+      return `<aside class="task-detail" id="taskDetail" tabindex="-1" aria-label="${esc(t('taskDetailAria'))}" aria-live="polite">
+        <div class="task-detail-head"><div><div class="eyebrow">${esc(phaseTitle)}</div><div class="task-detail-title">${esc(item.id)} · ${esc(item.title)}</div></div><span class="status state-${esc(itemState(item))}">${esc(stateLabel(itemState(item)))}</span></div>
+        <div class="task-detail-grid"><div class="task-detail-block wide"><div class="label">${esc(t('taskPurpose'))}</div><div>${esc(item.purpose || t('none'))}</div></div>
+          <div class="task-detail-block"><div class="label">${esc(t('taskVerification'))}</div><div>${esc(latest?.evidence || t('noVerification'))}</div></div>
+          <div class="task-detail-block"><div class="label">${esc(t('taskUpstream'))}</div><div>${esc((item.dependsOn || []).join('、') || t('none'))}</div>${blockers.length ? `<div class="state-blocked">${esc(t('blockedByLabel'))}${esc(blockers.join('、'))}</div>` : ''}</div>
+          <div class="task-detail-block"><div class="label">${esc(t('taskDownstream'))}</div><div>${esc(consumers.join('、') || t('none'))}</div></div>
+          <div class="task-detail-block"><div class="label">${esc(t('taskFilesLabel'))}</div>${fileRows}</div></div>
+        <div class="task-detail-actions"><button class="button" type="button" data-task-focus-phase="${esc(phaseId)}">${esc(t('focusPhase'))}</button><button class="button" type="button" data-task-open-list="${esc(phaseId)}">${esc(t('openTaskList'))}</button></div>
+      </aside>`;
+    }
+    function renderTasks() {
+      const allOpen = state.phase === 'all';
+      return `<section class="tasks-section"><div class="tasks-head"><h2>${esc(t('tasksTitle'))}</h2><div class="tasks-actions">
+        <button class="button" type="button" data-phase-toggle="all" aria-pressed="${allOpen}" title="${esc(t('allPhaseImpact'))}">${esc(t('allPhases'))}</button>
+        <div class="view-toggle" role="group" aria-label="${esc(t('viewModeAria'))}"><button class="button" type="button" data-item-view="list" aria-pressed="${state.itemView === 'list'}">${esc(t('listView'))}</button>
+        <button class="button" type="button" data-item-view="graph" aria-pressed="${state.itemView === 'graph'}">${esc(t('graphView'))}</button></div>
+      </div></div>${renderPhaseOverview()}${state.itemView === 'graph' ? `${renderPhaseTaskGraphs()}${renderTaskDetail()}` : renderPhaseCards()}</section>`;
     }
     function renderHandoff() {
       const h = state.status.handoff || {};
@@ -232,9 +655,9 @@
       // Raw project-map.json (global view) has no upstream/downstream fields — only the
       // server-computed status.projectMap does — so derive them here for both sources.
       const mapModules = (source?.modules || []).map(module => ({...module, ...moduleRelations(dependencies, module.id)}));
-      const direct = state.phase === 'all'
+      const direct = state.phase === 'all' && !state.selectedItem
         ? new Set(state.status.projectMap?.directModules || [])
-        : new Set(phaseItems().flatMap(item => item.noFileImpact ? ['_cross-cutting'] : (item.changeSets || []).map(change => change.moduleId)));
+        : new Set(impactItems().flatMap(item => item.noFileImpact ? ['_cross-cutting'] : (item.changeSets || []).map(change => change.moduleId)));
       const affected = new Set();
       dependencies.forEach(edge => {
         if (direct.has(edge.moduleId)) affected.add(edge.dependsOn);
@@ -251,32 +674,48 @@
       const modules = graphModules();
       if (!modules.length) return `<div class="empty">${esc(t('noModuleData'))}</div>`;
       if (!state.selectedModule || !modules.some(m => m.id === state.selectedModule)) state.selectedModule = modules[0].id;
-      const width = 760, cols = 3, nodeW = 190, nodeH = 70, xGap = 48, yGap = 62;
-      const rows = Math.ceil(modules.length / cols), height = Math.max(330, 50 + rows * (nodeH + yGap));
-      const pos = new Map(modules.map((m, i) => [m.id, {x: 40 + (i % cols) * (nodeW + xGap), y: 35 + Math.floor(i / cols) * (nodeH + yGap)}]));
-      const edges = (graphSource()?.dependencies || []).filter(d => pos.has(d.moduleId) && pos.has(d.dependsOn)).map(d => {
+      const visibleDependencies = (graphSource()?.dependencies || []).filter(d => modules.some(m => m.id === d.moduleId) && modules.some(m => m.id === d.dependsOn));
+      if (modules.length <= 3 && !visibleDependencies.length) {
+        return `<div class="module-card-grid">${modules.map(module => `<button class="module-card" type="button" data-module="${esc(module.id)}" aria-pressed="${module.id === state.selectedModule}"><div class="module-card-name">${esc(module.name)}</div><div class="module-card-meta">${esc(module.id)} · ${esc(impactLabel(module.impact))}</div></button>`).join('')}</div>`;
+      }
+      const cols = Math.min(3, modules.length), nodeW = 170, nodeH = 62, xGap = 34, yGap = 40;
+      const width = Math.max(600, 60 + cols * nodeW + Math.max(0, cols - 1) * xGap);
+      const rows = Math.ceil(modules.length / cols), height = Math.max(140, 30 + rows * (nodeH + yGap));
+      const pos = new Map(modules.map((m, i) => [m.id, {x: 30 + (i % cols) * (nodeW + xGap), y: 24 + Math.floor(i / cols) * (nodeH + yGap)}]));
+      const edges = visibleDependencies.map(d => {
         const a = pos.get(d.moduleId), b = pos.get(d.dependsOn);
         return `<path class="edge" d="M ${a.x + nodeW/2} ${a.y + nodeH/2} C ${a.x + nodeW/2} ${b.y + nodeH/2}, ${b.x + nodeW/2} ${a.y + nodeH/2}, ${b.x + nodeW/2} ${b.y + nodeH/2}"/>`;
       }).join('');
-      const nodes = modules.map(m => { const p = pos.get(m.id); return `<g class="node ${esc(m.impact || 'unchanged')} ${m.id === state.selectedModule ? 'selected' : ''}" data-module="${esc(m.id)}" transform="translate(${p.x},${p.y})"><rect width="${nodeW}" height="${nodeH}"/><text x="14" y="27" font-size="14" font-weight="650">${esc(m.name)}</text><text class="node-meta" x="14" y="49">${esc(m.id)} · ${esc(impactLabel(m.impact))}</text></g>`; }).join('');
-      return `<div class="map-wrap"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(t('graphAria'))}"><defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/></marker></defs>${edges}${nodes}</svg></div><div class="legend"><span class="changed-key"><i></i>${esc(t('legendChanged'))}</span><span class="affected-key"><i></i>${esc(t('legendAffected'))}</span><span><i></i>${esc(t('legendUnchanged'))}</span></div>`;
+      const nodes = modules.map(m => { const p = pos.get(m.id), aria = `${m.name} · ${m.id} · ${impactLabel(m.impact)}`; return `<g class="node ${esc(m.impact || 'unchanged')} ${m.id === state.selectedModule ? 'selected' : ''}" data-module="${esc(m.id)}" role="button" tabindex="0" aria-label="${esc(aria)}" transform="translate(${p.x},${p.y})"><rect width="${nodeW}" height="${nodeH}"/><text x="14" y="27" font-size="14" font-weight="650">${esc(fitLabel(m.name, 24))}</text><text class="node-meta" x="14" y="49">${esc(fitLabel(`${m.id} · ${impactLabel(m.impact)}`, 28))}</text></g>`; }).join('');
+      return `<div class="map-wrap"><svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="group" aria-label="${esc(t('graphAria'))}"><defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/></marker></defs>${edges}${nodes}</svg></div><div class="legend"><span class="changed-key"><i></i>${esc(t('legendChanged'))}</span><span class="affected-key"><i></i>${esc(t('legendAffected'))}</span><span><i></i>${esc(t('legendUnchanged'))}</span></div>`;
     }
     function renderModuleDetail() {
       const modules = graphModules();
       const module = modules.find(m => m.id === state.selectedModule) || modules[0];
       if (!module) return `<div class="empty">${esc(t('pickModule'))}</div>`;
-      const files = phaseItems().flatMap(item => itemFiles(item).filter(file => file.moduleId === module.id).map(file => ({...file, item})));
+      const files = impactItems().flatMap(item => itemFiles(item).filter(file => file.moduleId === module.id).map(file => ({...file, item})));
       const reasons = [...new Set(files.map(file => file.reason).filter(Boolean))];
-      return `<div class="module-top"><div><div class="module-name">${esc(module.name)}</div><div class="meta">${esc(module.id)}</div></div><span class="pill">${esc(impactLabel(module.impact))}</span></div>
-        <div class="module-block"><div class="label">${esc(t('moduleResponsibility'))}</div><div>${esc(module.description || t('noDescription'))}</div><div class="chips">${(module.pathPatterns || []).map(p => `<span class="chip">${esc(p)}</span>`).join('') || `<span class="muted">${esc(t('noPathPattern'))}</span>`}</div><div class="meta">${esc(t('mapReason'))}${esc(module.reason || '—')} · ${esc(t('evidence'))}${esc(module.evidence || '—')}</div></div>
-        <div class="module-block"><div class="label">${esc(t('whyChanged'))}</div><div>${reasons.map(esc).join('；') || esc(t('noDirectChange'))}</div></div>
-        <div class="module-block relations"><div class="relation"><div class="label">${esc(t('upstream'))}</div><div>${(module.upstream || []).map(esc).join('、') || esc(t('none'))}</div></div><div class="relation"><div class="label">${esc(t('downstream'))}</div><div>${(module.downstream || []).map(esc).join('、') || esc(t('none'))}</div></div></div>
-        <div class="module-block"><div class="label">${esc(t('phaseFiles'))}</div>${files.map(file => `<div><code>${esc(file.path)}</code> · ${esc(file.action)} · ${esc(file.item.id)}</div>`).join('') || `<div class="muted">${esc(t('none'))}</div>`}</div>`;
+      const moduleNames = new Map((graphSource()?.modules || []).map(value => [value.id, value.name]));
+      const directModules = modules.filter(value => value.impact === 'changed');
+      const dependencyStatements = [...new Set(directModules.flatMap(direct => (graphSource()?.dependencies || []).flatMap(edge => {
+        if (edge.moduleId === direct.id && edge.dependsOn === module.id) return [t('dependsStatement')(direct.name, module.name)];
+        if (edge.moduleId === module.id && edge.dependsOn === direct.id) return [t('dependsStatement')(module.name, direct.name)];
+        return [];
+      })))];
+      const scopeReason = module.impact === 'changed'
+        ? `${t('directImpactReason')}${reasons.length ? ` ${reasons.join('；')}` : ''}`
+        : module.impact === 'affected' ? t('affectedImpactReason')(dependencyStatements.join('；')) : t('unchangedImpactReason');
+      const relationNames = ids => ids.map(id => moduleNames.get(id) || id).join('、') || t('none');
+      return `<div class="module-top"><div><div class="module-name">${esc(module.name)}</div><div class="meta">${esc(module.id)}</div></div><span class="pill">${esc(impactLabel(module.impact))}</span></div><div class="module-detail-grid">
+        <div class="module-block scope-reason"><div class="label">${esc(t('whyInScope'))}</div><div>${esc(scopeReason)}</div></div>
+        <div class="module-block"><div class="label">${esc(t('moduleResponsibility'))}</div><div>${esc(module.description || t('noDescription'))}</div><div class="chips">${(module.pathPatterns || []).map(p => `<span class="chip">${esc(p)}</span>`).join('') || `<span class="muted">${esc(t('noPathPattern'))}</span>`}</div><div class="meta">${esc(t('mapReason'))}${esc(module.reason || '—')} · ${esc(t('evidence'))}${esc(module.evidence || '—')}</div><div class="meta">${esc(t('introducedByPlan'))}${esc(module.introducedByPlan || t('none'))} · ${esc(t('updatedByPlan'))}${esc(module.updatedByPlan || t('none'))}</div></div>
+        <div class="module-block relations"><div class="relation"><div class="label">${esc(t('upstream'))}</div><div>${esc(relationNames(module.upstream || []))}</div></div><div class="relation"><div class="label">${esc(t('downstream'))}</div><div>${esc(relationNames(module.downstream || []))}</div></div></div>
+        <div class="module-block module-files"><div class="label">${esc(t('currentScopeFiles'))}</div>${files.map(file => `<div><code>${esc(file.path)}</code> · ${esc(file.action)} · ${esc(file.item.id)}</div>`).join('') || `<div class="muted">${esc(t('none'))}</div>`}</div></div>`;
     }
     function renderChanges() {
       const rows = [];
       const mismatches = mismatchKeys();
-      for (const item of phaseItems()) {
+      for (const item of impactItems()) {
         const observations = new Map((item.observations || []).map(o => [o.path, o]));
         const attempts = item.verificationAttempts || [];
         for (const file of itemFiles(item)) {
@@ -297,11 +736,52 @@
       const status = state.status, plan = status.plan;
       const phases = status.phases || [];
       $('#app').innerHTML = `<div class="content">${renderHandoff()}<section class="plan-head"><div><div class="eyebrow">${esc(plan.reviewPolicy)} review · rev ${esc(plan.revision)}</div><h1>${esc(plan.name)}</h1><div class="goal">${esc(plan.goal)}</div></div><span class="pill">${esc(plan.state)}</span></section>
-        <nav class="phasebar"><button class="phase" data-phase="all" aria-pressed="${state.phase === 'all'}">${esc(t('allPhases'))}</button>${phases.map(p => `<button class="phase" data-phase="${esc(p.id)}" aria-pressed="${state.phase === p.id}">${esc(p.title)}</button>`).join('')}</nav>
-        ${renderSummary()}<section class="workspace"><div class="map-panel"><div class="panel-head"><div><h2>${state.global ? esc(t('globalGraph')) : esc(t('planScopedGraph'))}</h2><div class="meta">${esc(t('edgeHint'))}</div></div></div>${renderGraph()}</div><aside class="detail-panel">${renderModuleDetail()}</aside></section>${renderChanges()}${renderAudit()}</div>`;
+        ${renderSummary()}${renderTasks()}<section class="workspace"><div class="map-panel"><div class="panel-head"><div><h2>${state.global ? esc(t('globalGraph')) : esc(t('planScopedGraph'))}</h2><div class="meta">${esc(t('edgeHint'))}</div></div><span class="scope-pill">${esc(impactScopeLabel())}</span></div>${renderGraph()}</div><aside class="detail-panel">${renderModuleDetail()}</aside></section>${renderChanges()}${renderAudit()}</div>`;
       $('#generatedAt').textContent = `${t('snapshot')}${fmt(status.generatedAt)} · Map rev ${graphSource()?.revision ?? '—'}`;
-      document.querySelectorAll('[data-phase]').forEach(button => button.addEventListener('click', () => { state.phase = button.dataset.phase; render(); }));
-      document.querySelectorAll('[data-module]').forEach(node => node.addEventListener('click', () => { state.selectedModule = node.dataset.module; render(); }));
+      const selectPhase = node => {
+        const id = node.dataset.phaseToggle;
+        if (id === 'all') state.phase = 'all';
+        else {
+          state.focusedPhase = id;
+          state.phase = state.phase === id ? 'all' : id;
+        }
+        state.selectedItem = null;
+        render();
+      };
+      document.querySelectorAll('[data-phase-toggle]').forEach(node => {
+        node.addEventListener('click', () => selectPhase(node));
+        if (node.tagName !== 'BUTTON') node.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectPhase(node); }
+        });
+      });
+      document.querySelectorAll('[data-item-view]').forEach(button => button.addEventListener('click', () => {
+        state.itemView = button.dataset.itemView === 'graph' ? 'graph' : 'list';
+        localStorage.setItem('qing-plans-item-view', state.itemView);
+        render();
+      }));
+      const selectTaskNode = node => {
+        const item = allItems().find(i => i.id === node.dataset.item);
+        if (!item) return;
+        state.selectedItem = item.id;
+        state.focusedPhase = phaseIdOfItem(item.id);
+        render();
+        $('#taskDetail')?.focus();
+      };
+      document.querySelectorAll('[data-item]').forEach(node => {
+        node.addEventListener('click', () => selectTaskNode(node));
+        node.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectTaskNode(node); }
+        });
+      });
+      document.querySelectorAll('[data-task-focus-phase]').forEach(button => button.addEventListener('click', () => { state.phase = button.dataset.taskFocusPhase; state.focusedPhase = state.phase; render(); }));
+      document.querySelectorAll('[data-task-open-list]').forEach(button => button.addEventListener('click', () => { state.phase = button.dataset.taskOpenList; state.focusedPhase = state.phase; state.itemView = 'list'; render(); }));
+      const selectModule = node => { state.selectedModule = node.dataset.module; render(); };
+      document.querySelectorAll('[data-module]').forEach(node => {
+        node.addEventListener('click', () => selectModule(node));
+        node.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectModule(node); }
+        });
+      });
     }
     function applyChrome() {
       document.documentElement.lang = state.lang === 'en' ? 'en' : 'zh-CN';
@@ -314,7 +794,10 @@
     }
     async function loadPlan(slug) {
       state.status = await fetchJson(`${slug}/status.json`);
-      state.phase = 'all'; state.selectedModule = state.status.projectMap?.directModules?.[0] || state.status.projectMap?.modules?.[0]?.id || null;
+      state.phase = currentPhaseId() || 'all';
+      state.focusedPhase = currentPhaseId() || state.status.phases?.[0]?.id || null;
+      state.selectedItem = null;
+      state.selectedModule = state.status.projectMap?.directModules?.[0] || state.status.projectMap?.modules?.[0]?.id || null;
       render();
     }
     async function init() {

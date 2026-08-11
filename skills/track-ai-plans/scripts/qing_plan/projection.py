@@ -98,6 +98,90 @@ def project_map_projection(plan: dict, project_map: dict) -> dict:
             "affectedModules": sorted(affected), "warnings": warnings}
 
 
+def phase_graph_projection(plan: dict) -> dict:
+    """Project phase flow plus the task graph owned by each phase."""
+    phases = plan.get("phases", [])
+    items = {
+        item["id"]: item
+        for phase in phases
+        for item in phase.get("items", [])
+    }
+    item_phase = {
+        item["id"]: phase["id"]
+        for phase in phases
+        for item in phase.get("items", [])
+    }
+    dependencies: set[tuple[str, str]] = set()
+    for phase in phases:
+        for item in phase.get("items", []):
+            for dependency in item.get("dependsOn", []):
+                upstream = item_phase.get(dependency)
+                if upstream and upstream != phase["id"]:
+                    dependencies.add((phase["id"], upstream))
+
+    upstream_by_phase = {phase["id"]: set() for phase in phases}
+    downstream_by_phase = {phase["id"]: set() for phase in phases}
+    for phase_id, depends_on in dependencies:
+        upstream_by_phase[phase_id].add(depends_on)
+        downstream_by_phase[depends_on].add(phase_id)
+
+    projected = []
+    for order, phase in enumerate(phases):
+        phase_items = phase.get("items", [])
+        files = [file for item in phase_items for file in flatten_changes(item)]
+        modules = {file.get("moduleId") for file in files if file.get("moduleId")}
+        if any(item.get("noFileImpact") is True for item in phase_items):
+            modules.add("_cross-cutting")
+        internal_dependencies, incoming_dependencies, outgoing_dependencies = [], [], []
+        for item in phase_items:
+            for dependency in item.get("dependsOn", []):
+                edge = {"itemId": item["id"], "dependsOn": dependency}
+                dependency_phase = item_phase.get(dependency)
+                if dependency_phase == phase["id"]:
+                    internal_dependencies.append(edge)
+                else:
+                    incoming_dependencies.append({**edge, "fromPhaseId": dependency_phase})
+            for consumer in items.values():
+                if item["id"] not in consumer.get("dependsOn", []):
+                    continue
+                consumer_phase = item_phase.get(consumer["id"])
+                if consumer_phase != phase["id"]:
+                    outgoing_dependencies.append({
+                        "itemId": item["id"], "consumerId": consumer["id"], "toPhaseId": consumer_phase,
+                    })
+        projected.append({
+            "id": phase["id"], "title": phase.get("title"), "order": order,
+            "itemIds": [item["id"] for item in phase_items],
+            "completedItems": sum(item.get("status") == "done" for item in phase_items),
+            "totalItems": len(phase_items), "moduleIds": sorted(modules), "fileCount": len(files),
+            "dependsOn": sorted(upstream_by_phase[phase["id"]]),
+            "affects": sorted(downstream_by_phase[phase["id"]]),
+            "taskGraph": {
+                "nodes": [
+                    {"itemId": item["id"], "title": item.get("title"), "order": item_order,
+                     "status": item.get("status")}
+                    for item_order, item in enumerate(phase_items)
+                ],
+                "dependencies": sorted(internal_dependencies, key=lambda edge: (edge["itemId"], edge["dependsOn"])),
+                "incomingDependencies": sorted(
+                    incoming_dependencies,
+                    key=lambda edge: (edge["itemId"], edge["dependsOn"]),
+                ),
+                "outgoingDependencies": sorted(
+                    outgoing_dependencies,
+                    key=lambda edge: (edge["itemId"], edge["consumerId"]),
+                ),
+            },
+        })
+    return {
+        "phases": projected,
+        "dependencies": [
+            {"phaseId": phase_id, "dependsOn": depends_on}
+            for phase_id, depends_on in sorted(dependencies)
+        ],
+    }
+
+
 def dependencies_done(plan: dict, item: dict) -> bool:
     items = item_map(plan)
     return all(items.get(dep, {}).get("status") == "done" for dep in item.get("dependsOn", []))
@@ -210,6 +294,7 @@ def status_projection(entry: dict, plan: dict, root: Path, project_map: dict) ->
         "summary": {"completedItems": done, "totalItems": len(items), "openIssues": len(open_issues) + len(derived),
                     "changedModules": len(map_view["directModules"]), "affectedModules": len(map_view["affectedModules"])},
         "handoff": handoff_projection(root, entry, plan, project_map), "phases": phases,
+        "phaseGraph": phase_graph_projection(plan),
         "changeCoverage": coverage, "documentationImpact": compute_documentation_impact(plan, changes, bool(entry.get("baselineCommit"))),
         "projectMap": map_view, "reviews": plan.get("reviews", []), "amendments": plan.get("amendments", []),
         "issues": plan.get("issues", []), "derivedIssues": derived, "nextActions": [action],

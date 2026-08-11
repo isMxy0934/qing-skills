@@ -85,9 +85,14 @@ def migrated_item_observations(item: dict) -> list[dict]:
 
 def migrated_frozen_status(entry: dict, plan: dict, old_status: dict | None, project_map: dict) -> dict:
     items = all_items(plan)
+    item_lookup = item_map(plan)
     map_view = project_map_projection(plan, project_map)
     phases = [
-        {**phase, "items": [{**item, "observations": migrated_item_observations(item)} for item in phase.get("items", [])]}
+        {**phase, "items": [
+            {**item, "readiness": item_readiness(item, item_lookup)[0], "blockedBy": item_readiness(item, item_lookup)[1],
+             "observations": migrated_item_observations(item)}
+            for item in phase.get("items", [])
+        ]}
         for phase in plan.get("phases", [])
     ]
     return {
@@ -99,7 +104,8 @@ def migrated_frozen_status(entry: dict, plan: dict, old_status: dict | None, pro
                     "changedModules": len(map_view["directModules"]), "affectedModules": len(map_view["affectedModules"])},
         "handoff": {**plan["checkpoint"], "portability": "unknown", "warnings": ["Migrated terminal snapshot; V1 attribution is preserved as unknown"],
                     "nextAction": {"type": "terminal", "message": entry["state"]}},
-        "phases": phases, "changeCoverage": (old_status or {}).get("changeCoverage", {}),
+        "phases": phases, "phaseGraph": phase_graph_projection(plan),
+        "changeCoverage": (old_status or {}).get("changeCoverage", {}),
         "documentationImpact": (old_status or {}).get("documentationImpact", {}),
         "projectMap": map_view, "reviews": plan["reviews"], "amendments": [],
         "issues": plan["issues"], "derivedIssues": (old_status or {}).get("derivedIssues", []), "nextActions": [],

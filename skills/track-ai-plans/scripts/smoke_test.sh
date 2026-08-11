@@ -225,6 +225,9 @@ check "legacy fields convert without recomputing terminal status" "$(python3 -c 
 check "a migrated done item's frozen observation reads as matched, not pending" \
   "$(python3 -c "import json;o=json.load(open('$LEGACY/qing-plans/old-plan/status.json'))['phases'][0]['items'][0]['observations'][0];print(o['path'],o['observedAction'],o['observedState'])")" \
   "baseline.txt modify change-observed"
+check "migrated terminal status includes readiness and the two-level graph projection" \
+  "$(python3 -c "import json;s=json.load(open('$LEGACY/qing-plans/old-plan/status.json'));i=s['phases'][0]['items'][0];p=s['phaseGraph']['phases'][0];print(i['readiness'],i['blockedBy'],p['moduleIds'],p['fileCount'],[n['itemId'] for n in p['taskGraph']['nodes']])")" \
+  "done [] ['_unmapped'] 1 ['i1']"
 check "migration manifest contains source hashes" "$(python3 -c "import json;m=json.load(open('$LEGACY/qing-plans/migration.json'));print(m['state'],m['safeToDeleteLegacy'],len(m['sourceFiles'])>0)")" "verified True True"
 python3 - "$LEGACY/qing-plans/migration.json" <<'PY'
 import json,sys
@@ -263,8 +266,14 @@ check "the rejected cycle left no dependency behind" \
 R add-phase --plan reg-plan --id phase-1 --title Phase --purpose x --actor planner-agent --actor-type agent >/dev/null
 R add-item --plan reg-plan --phase phase-1 --id i1 --title Item --purpose x --module mod-a \
   --change-reason x --file a/f.txt:modify --verify-kind test --actor planner-agent --actor-type agent >/dev/null
+R add-phase --plan reg-plan --id phase-2 --title Followup --purpose x --actor planner-agent --actor-type agent >/dev/null
+R add-item --plan reg-plan --phase phase-2 --id i2 --title Followup --purpose x --depends-on i1 \
+  --no-file-impact --verify-kind manual --actor planner-agent --actor-type agent >/dev/null
 R review-plan --plan reg-plan --result pass --evidence ok --actor reviewer-agent --actor-type agent >/dev/null
 R transition --plan reg-plan --state active --reason ok --actor-type human >/dev/null
+check "phase graph derives phase flow, direct impact, and per-phase task boundaries" \
+  "$(R show | python3 -c 'import json,sys;g=json.load(sys.stdin)["phaseGraph"];p={x["id"]:x for x in g["phases"]};incoming=p["phase-2"]["taskGraph"]["incomingDependencies"];print(p["phase-2"]["dependsOn"],p["phase-1"]["affects"],p["phase-1"]["moduleIds"],p["phase-1"]["fileCount"],[(e["dependsOn"],e["itemId"],e["fromPhaseId"]) for e in incoming])')" \
+  "['phase-1'] ['phase-2'] ['mod-a'] 1 [('i1', 'i2', 'phase-1')]"
 R propose-amendment --kind temporary --reason "Needs follow-up cleanup" --evidence "Scoped workaround" \
   --operation '{"op":"add-item","phaseId":"phase-1","id":"i1-cleanup","title":"Cleanup","purpose":"Undo the workaround","verifyKind":"manual","noFileImpact":true}' \
   --cleanup-item i1-cleanup --actor implementer-agent --actor-type agent >/dev/null
@@ -276,6 +285,14 @@ check "the store stays free of runtime code through a full plan lifecycle" \
   "$(find "$REG/qing-plans" \( -name '*.py' -o -name '*.pyc' -o -name 'qing_plan' -o -name '.runtime-version' \) | wc -l | tr -d ' ')" "0"
 check "install-dashboard refreshes the viewer and nothing else" \
   "$(R install-dashboard | python3 -c 'import json,sys;print(",".join(sorted(p.rsplit("/",1)[-1] for p in json.load(sys.stdin)["installed"])))')" ".gitignore,dashboard.html"
+
+DASHBOARD_FIXTURE="$TEST_ROOT/dashboard-fixture"
+"$SCRIPT_DIR/create_dashboard_fixture.sh" "$DASHBOARD_FIXTURE" >/dev/null
+check "dashboard fixture exercises scale, Phase flow, and per-Phase branch graphs" \
+  "$(python3 "$PLANCTL" --root "$DASHBOARD_FIXTURE" show --plan dashboard-scale | python3 -c 'import json,sys;g=json.load(sys.stdin)["phaseGraph"];print(len(g["phases"]),len(g["dependencies"]),len(g["phases"][0]["taskGraph"]["nodes"]),len(g["phases"][0]["taskGraph"]["dependencies"]))')" \
+  "12 11 4 4"
+expect_die "dashboard fixture refuses to overwrite an existing store" \
+  "$SCRIPT_DIR/create_dashboard_fixture.sh" "$DASHBOARD_FIXTURE"
 
 mkdir -p "$REG/a"
 printf 'work in progress\n' >"$REG/a/f.txt"
