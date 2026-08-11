@@ -1,3 +1,9 @@
+## 4.1.0 - 2026-08-11
+
+### Features
+- track-ai-plans: Add two-level `phaseGraph` visualization — full Phase dependency graph plus one focused Phase's task graph with cross-Phase boundary links; Phase/task selection scopes impact map, module detail, and change rows; derive the same projection for older frozen V2 snapshots missing `phaseGraph`
+- track-ai-plans: Add `create_dashboard_fixture.sh` for disposable multi-Phase dashboard QA fixtures
+
 ## 4.0.1 - 2026-08-11
 
 ### Fixes

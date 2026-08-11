@@ -1,3 +1,9 @@
+## 4.1.0 - 2026-08-11
+
+### 新功能
+- track-ai-plans：新增两级 `phaseGraph` 可视化——完整 Phase 依赖图 + 单个聚焦 Phase 的任务图（含跨 Phase 边界边）；Phase/任务选择会收窄影响图、模块详情与变更行；旧版冻结 V2 快照缺少 `phaseGraph` 时自动推导同等投影
+- track-ai-plans：新增 `create_dashboard_fixture.sh`，用于生成可丢弃的多 Phase 仪表盘 QA fixture
+
 ## 4.0.1 - 2026-08-11
 
 ### 修复
