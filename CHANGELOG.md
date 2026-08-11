@@ -1,3 +1,19 @@
+## 4.2.0 - 2026-08-11
+
+### Features
+- track-ai-plans: Restructure the dashboard information architecture — Plan identity and risk badge first, then handoff next-action hero, summary, tasks, module impact, and collapsible change/audit detail
+- track-ai-plans: Add a manual light/dark/auto theme toggle for the dashboard, defaulting to light instead of always following the OS/browser color scheme
+- track-ai-plans: Add `planctl.py serve` to start a loopback-only HTTP server and open the dashboard automatically, instead of requiring a manually started server every time (the dashboard's `fetch()` calls are blocked under `file://`)
+
+### Refactor
+- track-ai-plans: Separate color tokens for task status (blue/green/amber/red) vs module impact (purple), and render handoff portability with neutral text plus icons instead of reused status colors
+- track-ai-plans: Deduplicate module/file impact counts out of the Phase graph; show them once on the module impact map; add visual tiers so Changes and Audit fold by default
+- track-ai-plans: Keep list and graph view defaulting to the same current phase (others fold, click to expand); "All phases" stays an explicit opt-in. Clarify that the list/graph toggle scopes to one phase's tasks, separate from the always-visible Phase relationship graph
+
+### Fixes
+- track-ai-plans: Fix the phase list accordion expanding every phase card when collapsing the one already open; the list's own expand/collapse state is now tracked separately from the Phase graph's impact-scope selection instead of sharing the same toggle
+- track-ai-plans: Move the "all phases" control from the task list toolbar to the module impact map panel it actually scopes, and stop it from touching the task list's expand/collapse state or the task graph's focused phase
+
 ## 4.1.0 - 2026-08-11
 
 ### Features
