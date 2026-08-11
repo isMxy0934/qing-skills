@@ -1,3 +1,8 @@
+## 4.0.1 - 2026-08-11
+
+### Fixes
+- track-ai-plans: Stop the dashboard mislabeling a migrated `done` item's file as pending; a migrated frozen status now restates the file-match V1's own completion rule already guaranteed, instead of leaving the per-item observations V2's live projection normally fills in empty
+
 ## 4.0.0 - 2026-08-11
 
 ### Breaking Changes
