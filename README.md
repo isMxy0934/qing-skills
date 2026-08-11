@@ -6,7 +6,7 @@ AI 工作流 Codex Skills 集合。
 
 | Skill | 描述 |
 |-------|------|
-| [track-ai-plans](skills/track-ai-plans) | 在 Git 仓库中创建、执行、验证并通过自动安装的只读仪表盘跟踪 AI 工作计划 |
+| [track-ai-plans](skills/track-ai-plans) | 用可恢复计划、项目地图、变更证据和只读仪表盘追踪 Git 仓库中的长任务 |
 
 ## 安装
 
@@ -28,26 +28,37 @@ npx skills update
 ## 使用
 
 ```
-$track-ai-plans 创建或继续当前的 Git 工作计划
+$track-ai-plans 发现、创建或继续当前的 Qing Plan
 ```
 
-### 审查门禁
+### 长任务与独立审查
 
-`track-ai-plans` 将计划制定、实施和审查分开：具名 subagent 创建草案，另一名 subagent 使用 `review-plan` 审查通过后，用户才能激活计划。每个阶段的所有任务完成后，必须由未参与该阶段实施的 subagent 使用 `review-phase` 审查通过，下一阶段才会解除阻塞。失败的审查需要先处理并重新审查。
+计划保存在仓库的 `qing-plans/` 中，其他 agent 或另一台电脑可从 Git 恢复当前目标、下一步、修改原因和验证证据。`resume` 会主动发现未完成计划；暂停计划需要明确恢复，避免劫持新请求。
+
+审查策略只有两种：普通任务使用 `none`，依靠测试和验证证据；长任务默认使用 `single`，由一个独立 agent 审查初始计划以及重大范围修订。阶段之间不设置额外审查门禁。
+
+`PLANCTL` 始终指向 skill 自带的 `scripts/planctl.py`（具体路径随安装方式而不同）。仓库里只有计划数据和仪表盘，不会被写入任何脚本，因此首次创建计划前后、换机器前后，命令完全一致。
 
 ```bash
-# 独立 subagent 审查草案；planner 和 reviewer 必须不同
-python3 scripts/planctl.py --root ROOT review-plan \
+# 创建长任务；默认 review policy 为 single
+python3 "$PLANCTL" --root ROOT create \
+  --slug my-plan --name "跨 agent 的长任务" --goal "完成可恢复的长任务" \
+  --actor planner-agent --actor-type agent
+
+# 由独立 agent 审查当前计划 revision
+python3 "$PLANCTL" --root ROOT review-plan \
   --plan my-plan --result pass --evidence "范围、依赖与验证方式完整" \
   --actor plan-reviewer --actor-type agent
 
-# 阶段全部任务完成后，由非实施者审查该阶段
-python3 scripts/planctl.py --root ROOT review-phase \
-  --phase phase-1 --result pass --evidence "实现、测试和计划文件均已核对" \
-  --actor phase-reviewer --actor-type agent
+# 新 agent 开始前主动发现当前工作
+python3 "$PLANCTL" --root ROOT resume
 ```
 
-审查记录、阻塞原因和下一步会写入计划状态，并显示在只读仪表盘中。
+仪表盘位于 `qing-plans/dashboard.html`，按模块展示计划文件、实际修改、修改原因、上下游关系、修订、问题与验证状态。项目地图由 agent 随计划逐步维护，不依赖语言特定的 AST 分析。skill 升级后如需刷新仪表盘：
+
+```bash
+python3 "$PLANCTL" --root ROOT install-dashboard
+```
 
 ## 依赖
 
