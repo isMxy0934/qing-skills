@@ -286,6 +286,28 @@ check "the store stays free of runtime code through a full plan lifecycle" \
 check "install-dashboard refreshes the viewer and nothing else" \
   "$(R install-dashboard | python3 -c 'import json,sys;print(",".join(sorted(p.rsplit("/",1)[-1] for p in json.load(sys.stdin)["installed"])))')" ".gitignore,dashboard.html"
 
+###############################################################################
+# serve: local HTTP server for the dashboard, since fetch() is blocked on file://.
+###############################################################################
+SERVE_LOG="$TEST_ROOT/serve.log"
+python3 "$PLANCTL" --root "$REG" serve --no-open --port 0 >"$SERVE_LOG" 2>&1 &
+SERVE_PID=$!
+for _ in $(seq 1 50); do
+  grep -q 'dashboard at' "$SERVE_LOG" 2>/dev/null && break
+  sleep 0.1
+done
+SERVE_URL="$(grep -o 'http://[^ ]*' "$SERVE_LOG" | head -1)"
+check "serve starts a loopback HTTP server that serves the dashboard" \
+  "$(python3 -c "
+import urllib.request
+try:
+    print(urllib.request.urlopen('$SERVE_URL', timeout=5).status)
+except Exception as exc:
+    print('error:', exc)
+")" "200"
+kill "$SERVE_PID" 2>/dev/null || true
+wait "$SERVE_PID" 2>/dev/null || true
+
 DASHBOARD_FIXTURE="$TEST_ROOT/dashboard-fixture"
 "$SCRIPT_DIR/create_dashboard_fixture.sh" "$DASHBOARD_FIXTURE" >/dev/null
 check "dashboard fixture exercises scale, Phase flow, and per-Phase branch graphs" \
@@ -312,6 +334,7 @@ new_repo "$FRESH"
 F() { python3 "$PLANCTL" --root "$FRESH" "$@"; }
 
 expect_die "install-dashboard refuses to run before a store exists" F install-dashboard
+expect_die "serve refuses to run before a store exists" F serve
 check "a refusal names the command that creates the store" \
   "$(F validate 2>&1 >/dev/null | grep -c 'run `create`')" "1"
 check "a command that writes nothing leaves no store directory behind" \

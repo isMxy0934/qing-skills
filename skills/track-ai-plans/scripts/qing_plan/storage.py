@@ -39,7 +39,7 @@ REVIEW_POLICIES = {"none", "single"}
 AMENDMENT_KINDS = {"scope", "corrective", "temporary"}
 DOC_MODES = {"required", "none"}
 DOC_COVERAGE = {"all", "any"}
-READ_ONLY_COMMANDS = {"validate", "show", "changes", "history", "resume"}
+READ_ONLY_COMMANDS = {"validate", "show", "changes", "history", "resume", "serve"}
 MUTATING_COMMANDS = {
     "create", "set-documentation-impact", "add-phase", "add-item", "review-plan",
     "upsert-module", "upsert-dependency", "propose-amendment", "review-amendment",

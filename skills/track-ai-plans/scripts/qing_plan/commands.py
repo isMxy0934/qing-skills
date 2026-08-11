@@ -45,6 +45,51 @@ def install_assets(root: Path, *, overwrite: bool) -> list[str]:
     return install_store_assets(store_dir(root), overwrite=overwrite)
 
 
+DEFAULT_SERVE_PORT = 4795
+
+
+def cmd_serve(args: argparse.Namespace, root: Path) -> dict:
+    # The dashboard fetches status.json via relative paths, which browsers block under
+    # file://; it must be served over HTTP. Legacy stores keep their viewer at the
+    # repository root instead of inside the (read-only) plans/ directory.
+    import functools
+    import http.server
+    import threading
+    import webbrowser
+
+    if st._USING_LEGACY:
+        directory, dashboard_name = root, "plan-dashboard.html"
+    else:
+        directory, dashboard_name = store_dir(root), "dashboard.html"
+    dashboard = directory / dashboard_name
+    if not dashboard.exists():
+        die(f"no {dashboard_name} at {directory}; run install-dashboard (or create) first")
+
+    handler_cls = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(directory))
+    port = args.port
+    try:
+        httpd = http.server.ThreadingHTTPServer((args.host, port), handler_cls)
+    except OSError as exc:
+        if port == 0:
+            raise
+        print(f"planctl: port {port} unavailable ({exc}); picking a free port instead", file=sys.stderr)
+        httpd = http.server.ThreadingHTTPServer((args.host, 0), handler_cls)
+
+    host, actual_port = httpd.server_address[:2]
+    url = f"http://{host}:{actual_port}/{dashboard_name}"
+    print(f"planctl: serving {directory}", file=sys.stderr)
+    print(f"planctl: dashboard at {url} (Ctrl+C to stop)", file=sys.stderr)
+    if not args.no_open:
+        threading.Timer(0.3, webbrowser.open, args=(url,)).start()
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("", file=sys.stderr)
+    finally:
+        httpd.server_close()
+    return {"served": str(directory), "url": url}
+
+
 def new_checkpoint() -> dict:
     return {
         "itemId": None, "lastCompletedItemId": None, "planRevision": 1, "projectMapRevision": 0,
