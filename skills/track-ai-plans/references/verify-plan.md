@@ -1,33 +1,26 @@
-# Verify plan work
+# Record verification evidence
 
-1. Read the item's purpose, dependencies, verification kind, and exact expected files.
-2. Run the smallest reliable check.
-3. Record `pass` or `fail` with concise evidence and the real source:
-   - `script`: an automated command ran;
-   - `llm`: the model reviewed the artifact;
-   - `human`: the user confirmed the result.
-4. A passing verification may mark an item done only when its dependencies are done.
-5. `planctl.py` records the command actor as `completedBy` for each done item. Once every item in a phase is done, assign a different agent to review that phase; the reviewer cannot match any `completedBy` identity in the phase.
-6. Verification does not override Git coverage. Completion independently rejects missing or mismatched planned files.
+Read the item's purpose, verification kind, declared module/reason/files, dependencies, and start snapshot. Run the smallest reliable check, then append the real outcome.
+
+The source mapping is strict:
+
+| verifyKind | verified-by | Meaning |
+|---|---|---|
+| `test` | `script` | An automated command actually ran |
+| `llm-review` | `llm` | A model inspected the artifact |
+| `manual` | `human` | The user or human operator confirmed it |
 
 ```bash
-python3 scripts/planctl.py --root ROOT verify \
-  --item p1-01 --result pass \
-  --evidence "8 tests passed" --verified-by script
+python3 "$PLANCTL" --root ROOT verify \
+  --item p1-01 --result pass --evidence "pytest: 18 passed" \
+  --verified-by script --actor implementer --actor-type agent
 
-python3 scripts/planctl.py --root ROOT verify \
-  --item p1-02 --result fail \
-  --evidence "3 passed, 1 failed" \
-  --reason "rollback leaves an outbox row" \
-  --verified-by script
-
-python3 scripts/planctl.py --root ROOT review-phase \
-  --phase phase-1 --result fail \
-  --evidence "Boundary behavior still lacks coverage" \
-  --reason "Add the missing boundary test" \
-  --actor phase-reviewer-agent --actor-type agent
-
-python3 scripts/planctl.py --root ROOT changes
+python3 "$PLANCTL" --root ROOT verify \
+  --item p1-02 --result fail --evidence "17 passed, 1 failed" \
+  --reason "A quoted field containing the separator still splits into two columns" \
+  --verified-by script --actor implementer --actor-type agent
 ```
 
-`not-run` records an honest event without changing item state. Before requesting completion, run `changes` and ensure `pending`, `mismatched`, and `unexpected` are all zero.
+`not-run` honestly records a verification attempt without changing item state. `pass` and `fail` require the item to already be `in-progress`; they capture end `HEAD`, time, hashes, and observed file actions. Restarting a failed/blocked item appends another execution attempt instead of overwriting attribution history.
+
+Verification does not override Git coverage. Before completion, `changes` must show no pending/mismatched/unexpected file and no per-item attribution mismatch.

@@ -1,135 +1,53 @@
-# Storage schema
-
-The storage model separates lifecycle registry, declared plan content, observed status, and audit events.
+# V2 storage and projections
 
 ## Layout
 
 ```text
-plans/
-├── .planctl.lock
-├── index.json
+qing-plans/
+├── .planctl.lock                 # not committed
+├── .gitignore                    # ignores the lock file
+├── dashboard.html                # read-only viewer, the only non-data artifact
+├── index.json                    # authoritative lifecycle registry
+├── project-map.json              # shared, incremental project map
+├── migration.json                # only after verified V1 migration
 └── <slug>/
-    ├── plan.json
-    ├── status.json
-    └── events/
-        └── <timestamp>-<event>-<id>.json
+    ├── plan.json                 # declared plan + execution history
+    ├── status.json               # generated or terminal-frozen projection
+    └── events/*.json             # append-only audit records
 ```
 
-## Authoritative registry
+The runtime is never copied here. It stays in the skill and is always invoked as `python3 "$PLANCTL"`, so a repository carries only its own data plus the viewer that reads it, and no installed copy exists that could fall behind the skill writing to it. Everything needed to *read* a store elsewhere — the JSON and the self-contained `dashboard.html` — is committed; mutation needs the skill. `install-dashboard` refreshes the viewer after a skill upgrade.
 
-`index.json` is authoritative, not generated. It is the only source for lifecycle state, activation baseline, replacement linkage, and the current-plan slot.
+## Authority
+
+`index.json` alone owns each plan's `state`, `baselineCommit`, replacement link, and the single `currentPlanSlug`. `plan.json` owns goal, review policy/revision, phases/items, reviews, amendments, verification attempts, execution snapshots, checkpoint, and issues.
+
+`project-map.json` is shared by successive plans. Each module has an ID, responsibility, path patterns, reason/evidence for the boundary, and introducing/updating plan. Dependencies store only `{moduleId: A, dependsOn: B, reason, evidence}`. Upstream/downstream and Plan overlays are projections, not duplicate stored graphs.
+
+## Items and stage attribution
+
+Each item has one or more `changeSets` or `noFileImpact: true`:
 
 ```json
 {
-  "schemaVersion": 1,
-  "revision": 12,
-  "currentPlanSlug": "dashboard-migration",
-  "updatedAt": "ISO-8601",
-  "plans": [
-    {
-      "slug": "dashboard-migration",
-      "name": "Dashboard migration",
-      "state": "active",
-      "path": "dashboard-migration/plan.json",
-      "createdAt": "ISO-8601",
-      "updatedAt": "ISO-8601",
-      "activatedAt": "ISO-8601",
-      "baselineCommit": "git commit captured on first activation",
-      "replacedBy": null
-    }
-  ]
+  "moduleId": "reporting",
+  "reason": "Give export and preview one shared row source",
+  "files": [{"path": "src/reporting/rows.py", "action": "create", "from": null}]
 }
 ```
 
-States are `draft`, `active`, `paused`, `completed`, and `cancelled`. Exactly one `active` or `paused` entry must equal `currentPlanSlug`; otherwise `currentPlanSlug` is null. Drafts have no baseline. Terminal entries are immutable.
+On `in-progress`, a new append-only `executionAttempts[]` entry captures start `HEAD`, time, and planned path hashes; `execution` points to the current/latest attempt for convenient display. On pass, fail, or block it captures end `HEAD`, time, and before/after hashes with observed actions. Overall baseline coverage still detects off-plan work; the attempt history preserves which stage performed a change even if a retry or later stage touches the same file.
 
-## Declared plan content
+## Immutable review and amendment history
 
-`plan.json` never stores lifecycle state or baseline.
+`reviews[]` binds a result to `targetType`, `targetId`, `targetRevision`, and `projectMapRevision`. Draft edits increment revision; old reviews remain audit evidence but no longer authorize activation.
 
-```json
-{
-  "schemaVersion": 1,
-  "slug": "dashboard-migration",
-  "goal": "Move dashboard writes to one command path",
-  "owner": "joy.mu",
-  "planner": "planner-agent",
-  "phaseReviewGatesEnabled": true,
-  "planReview": {
-    "status": "passed",
-    "reviewer": "plan-reviewer-agent",
-    "evidence": "Dependencies, file actions, and verification criteria are complete",
-    "reason": null,
-    "reviewedAt": "ISO-8601"
-  },
-  "createdAt": "ISO-8601",
-  "updatedAt": "ISO-8601",
-  "currentPhaseId": "phase-1",
-  "documentationImpact": {
-    "mode": "required",
-    "coverage": "all",
-    "reason": null,
-    "targets": [
-      {"pattern": "docs/architecture/**", "purpose": "keep boundaries current"}
-    ]
-  },
-  "phases": [
-    {
-      "id": "phase-1",
-      "title": "Command foundation",
-      "purpose": "Create the shared path",
-      "phaseReview": {
-        "status": "passed",
-        "reviewer": "phase-reviewer-agent",
-        "evidence": "Reviewed implementation, tests, and declared file actions",
-        "reason": null,
-        "reviewedAt": "ISO-8601"
-      },
-      "items": [
-        {
-          "id": "p1-01",
-          "title": "Add command contract",
-          "purpose": "Use one contract",
-          "dependsOn": [],
-          "status": "not-started",
-          "verifyKind": "test",
-          "verifiedBy": "unverified",
-          "completedBy": null,
-          "evidence": null,
-          "reason": null,
-          "noFileImpact": false,
-          "plannedFiles": [
-            {"path": "packages/contracts/command.ts", "action": "create", "from": null}
-          ],
-          "updatedAt": "ISO-8601"
-        }
-      ]
-    }
-  ],
-  "checkpoint": {
-    "currentItemId": null,
-    "lastCompletedItemId": null,
-    "stopReason": null,
-    "updatedAt": "ISO-8601"
-  },
-  "issues": []
-}
-```
+An amendment stores kind, reason, evidence, proposed actor/time, ordered operations, reviews, status, and before/after plan/map revisions. Applied amendments increment the plan revision. Temporary amendments also bind a cleanup item.
 
-Every item has a verification kind and exactly one file-impact mode: non-empty `plannedFiles`, or `noFileImpact: true`.
+## Checkpoint and handoff
 
-New plans set `phaseReviewGatesEnabled: true`, so every phase has `phaseReview`. It is `not-ready` until all of its items are done, then `pending` until an independent agent records `passed` or `failed` evidence. The reviewer cannot equal any `completedBy` identity in that phase. An item in a later phase cannot enter `in-progress` or `done` until every previous phase review has passed. The generated status projection exposes each phase's `phaseReview` and `executionGate` (`open` or `blocked`, with the blocking phase IDs). Active or paused plans created before this field existed are treated as legacy: their absent phase reviews are passed, but new drafts are never allowed to omit the gate flag.
+The checkpoint stores item, last completed item, plan/map revisions, branch, `HEAD`, stop reason, concrete next action, actor/time, and handoff readiness. `resume` compares current branch/`HEAD`, dirty paths, upstream, and ahead/behind counts, then derives one next action. Only a clean, fully pushed state is `portable`.
 
-`planner` is the named agent that authored the draft. `planReview` is `pending`, `passed`, or `failed`; a passed or failed review records a different named agent, evidence, and timestamp (and a failed review also records its reason). Any draft structure change — documentation impact, phase, or item — resets this object to `pending`. Only a draft with `planReview.status = passed` may activate, and activation still requires a human actor.
+## Status
 
-## Generated and frozen status
-
-For active and paused plans, `show` derives status from the registry baseline and current Git tree. Each successful mutation refreshes `status.json`. On completion or cancellation, the final status is frozen; later Git activity cannot rewrite history.
-
-`changeCoverage` contains `planned`, `observed`, `pending`, `mismatched`, `unexpected`, and `offPlanChanges`. Completion requires `pending = mismatched = unexpected = 0` for done items and exact action/source matches.
-
-If a done item still has a `pending` or `action-mismatch` observation, status emits a critical `planned-file-mismatch` derived issue. It contributes to `summary.openIssues` and `nextActions`, then disappears automatically when the declaration and Git observation agree.
-
-The dashboard derives its Plan DAG from `phases[].items[].dependsOn` in this status projection. There is no persisted graph file or second dependency model.
-
-Event files are append-only audit records. Use `planctl.py history --plan SLUG` to read them. They are not a replay database.
+Status combines lifecycle, item readiness, Planned/Observed/Verified file rows, Git change coverage, documentation impact, module overlay and warnings, handoff, amendments, issues, and next action. Read-only `show` and `resume` do not rewrite it. Mutations refresh it. Completion/cancellation freeze it.

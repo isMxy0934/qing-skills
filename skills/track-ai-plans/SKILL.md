@@ -1,59 +1,55 @@
 ---
 name: track-ai-plans
-description: Create, execute, verify, pause, resume, replace, complete, and summarize one current AI work plan in a Git repository. Use when Codex needs a multi-step implementation plan, must continue recorded work, track blockers and changed files, verify plan items, or show durable progress in a dashboard.
+description: Track long, multi-step AI implementation work in Git so another agent or computer can resume it without restating intent. Use when work needs a durable plan, file/module impact, reasons, upstream/downstream context, independent plan review, scope amendments, checkpoints, verification history, migration from plans/, or a visual qing-plans dashboard.
 ---
 
 # Track AI Plans
 
-Use a repository-local plan store to answer: what is current, what was intended, what changed, what is verified, and what stops the work.
+Use `qing-plans/` as durable project memory: what the user wants, why the plan is shaped this way, what each stage changes, which modules are affected, what was observed and verified, and exactly what should happen next.
 
 ## Preflight
 
-1. Treat the Git top-level as `ROOT`; refuse activation from a subdirectory or a repository without an initial commit.
-2. Run `python3 scripts/planctl.py --root ROOT validate` before changing an existing store.
-3. Run `python3 scripts/planctl.py --root ROOT show` before continuing current work.
-4. Report the current plan, current item, completed count, open problems, and next actionable item before substantial changes.
+1. Treat the Git top-level as `ROOT`. Set `PLANCTL` to this skill's own `scripts/planctl.py` and run every command as `python3 "$PLANCTL" --root ROOT ...`. A repository holds plan data and `dashboard.html` only — never the runtime — so the same command works before the first plan exists and on every later machine.
+2. If `qing-plans/index.json` exists, run `validate`, then `resume`. With no current plan, `resume` discovers one unfinished draft or lists draft candidates instead of silently ignoring them.
+3. If only `plans/index.json` exists, it is V1 and read-only. Read [references/migration.md](references/migration.md) before mutation.
+4. If both directories exist, continue only when `qing-plans/migration.json` is verified; then `qing-plans/` is authoritative and `plans/` is legacy evidence.
+5. A paused plan is current but never auto-resumed. Report it and ask the user before changing its lifecycle.
 
 ## Route the request
 
-- Create or restructure a plan: read [references/create-plan.md](references/create-plan.md).
-- Start work, record progress, or stop with a reason: read [references/work-plan.md](references/work-plan.md).
-- Record verification evidence: read [references/verify-plan.md](references/verify-plan.md).
-- Pause, resume, complete, cancel, or replace: read [references/plan-lifecycle.md](references/plan-lifecycle.md).
-- Diagnose stored JSON: read [references/schema.md](references/schema.md).
+- Create a plan or define modules: read [references/create-plan.md](references/create-plan.md).
+- Continue work, checkpoint, or change active scope: read [references/work-plan.md](references/work-plan.md).
+- Record test, model-review, or human evidence: read [references/verify-plan.md](references/verify-plan.md).
+- Activate, pause, complete, cancel, or replace: read [references/plan-lifecycle.md](references/plan-lifecycle.md).
+- Migrate V1 `plans/`: read [references/migration.md](references/migration.md).
+- Diagnose JSON or dashboard projections: read [references/schema.md](references/schema.md).
 
-## Write in the user's language
+## Core rules
 
-Every stored text field — plan `--goal`, item `--title`/`--purpose`, `--evidence`/`--reason`, issue `--title`/`--detail`/`--next-action` — is content you author, not tool output. Write it in the language the user is using in conversation. The examples throughout this skill's reference files are in English only so the skill itself stays portable to read; they are not a template for what language to write plan content in. A dashboard mixing the user's language in its labels with English in every item's title reads as two systems stitched together — keep the content language consistent with what the user actually speaks.
+- `qing-plans/index.json` alone owns lifecycle state, baseline, and `currentPlanSlug`. At most one `active` or `paused` plan is current.
+- New plans use review policy `single` by default. Use `none` for ordinary work where tests and verification evidence are sufficient.
+- `single` requires one genuinely independent agent to review the current immutable plan revision and project-map revision before activation. It also reviews every material active amendment. It does not require phase reviews.
+- Reviewer-name inequality is only a guardrail: invoke a genuinely separate agent for `single`; never relabel the planner/implementer context as a reviewer.
+- A draft's named planner defines phases, items, documentation impact, and the project map. Draft edits increment the plan revision, making older reviews stale without deleting history.
+- Never edit active scope directly. Use `propose-amendment` with kind `scope`, `corrective`, or `temporary`. A temporary amendment names a cleanup item that must finish before completion.
+- Every file-changing item groups files into `changeSets` with a module and reason. Use `_unmapped` only while classification is genuinely unknown and `_cross-cutting` for cross-module/no-file work.
+- Project dependencies have one direction only: `A dependsOn B`. Derive upstream and downstream from that relation. Do not introduce AST/import analysis as a hidden second source of truth.
+- Mark an item `in-progress` before implementation. The tool snapshots planned file hashes and Git `HEAD`; completing it captures end hashes and observed actions so later edits cannot erase stage attribution.
+- Verification attempts are append-only. Enforce `test → script`, `llm-review → llm`, and `manual → human`.
+- Only human-authorized commands activate, pause, resume a paused plan, complete, cancel, or replace a plan. The read-only `resume` inspection command itself never changes lifecycle. Terminal snapshots are frozen.
+- Completion requires non-empty work, all items done, temporary cleanup done, no open issue/pending amendment/off-plan change, exact planned actions, and required documentation coverage.
+- Route every mutation through `$PLANCTL`. It locks, appends audit events, updates the registry, and refreshes the affected status snapshot.
 
-## Core invariants
+## Handoff discipline
 
-- `plans/index.json` is the only lifecycle registry. It owns every plan's state, baseline, and `currentPlanSlug`; do not duplicate those fields in `plan.json`.
-- Keep at most one current plan. Both `active` and `paused` occupy `currentPlanSlug`; pausing does not make room for another resumable plan.
-- Create plans as `draft`. Capture `baselineCommit` only when activating, after Git is clean outside `plans/` and `plan-dashboard.html`.
-- A named planner subagent creates and edits a draft. Before activation, a different named reviewer subagent must pass `review-plan`; any draft structure change resets that approval.
-- Every completed phase enters `phaseReview=pending`. A different agent from every completed-item agent in that phase must pass `review-phase` before work may enter a later phase.
-- Only `active` plans may update items, verify work, checkpoint, or mutate issues. Draft plans may only define phases, items, and documentation impact. Completed and cancelled plans are immutable.
-- Every item declares `--verify-kind test|llm-review|manual` and exactly one of: one or more `--file` values, or `--no-file-impact`.
-- Enter `in-progress` or `done` only after dependencies are done. Keep at most one item `in-progress`.
-- Mark `done` only with evidence and `--verified-by script|llm|human`.
-- Treat `create`, `modify`, `delete`, and `move` as exact actions. A mismatched or missing planned change never satisfies completion.
-- Complete only when every item is done, every planned file is observed exactly, no off-plan change or open issue exists, and required documentation coverage passes.
-- Require `--actor-type human` for activation, pause, resume, completion, cancellation, and replacement.
-- Require `--actor-type agent --actor NAME` for draft planning and plan review. Use distinct, stable subagent names for the planner and reviewer so the audit trail can enforce independence.
-- Require `--actor-type agent --actor NAME` for phase review too. `completedBy` records who completed each item so a phase cannot self-approve.
-- `planctl.py` can only check that the reviewer's `--actor` name differs from the planner or from every `completedBy` in the phase; it cannot check who actually ran the command. That name check is a guardrail, not the source of independence. Run `review-plan` and `review-phase` from a genuinely separate subagent invocation — a fresh Task/Agent call with no shared conversation history with the planner or the implementing agent. Never satisfy the gate by having the same context call itself again under a different `--actor` value; a same-context self-review passes the tool check but provides none of the independent judgment the gate exists for.
-- Use `switch` only to terminate the current plan and activate a clean draft atomically. Use separate Git worktrees if resumable plans must execute in parallel.
-- Use `planctl.py` for every mutation. It holds `plans/.planctl.lock`, writes an event, updates the authoritative registry, and refreshes only the affected status snapshots.
+At a stop, run `checkpoint` with the current item, stop reason, and concrete next action. Commit `qing-plans/` together with code at meaningful milestones and push the branch before changing computers. A dirty tree, missing upstream, or unpushed commit makes the checkpoint `local-only`; another computer can read any already-synced intent but cannot reliably fetch the complete state.
 
-## Keep the store in Git
-
-Track `plans/` and `plan-dashboard.html` — this is what makes the current plan and its progress visible from any device, not just the one that ran the last command. Commit at milestones (plan creation/activation before writing code, each phase completion, plan completion/pause/cancel/replacement) and always before switching devices or ending a session, even if the current item is not done — an item marked `in-progress` only locally is invisible everywhere else, and the single-in-progress-item guarantee ([Core invariants](#core-invariants)) is enforced against the local file, not across devices.
+`resume` is deterministic: pending amendment/review gate, current in-progress item, failed/blocked item, first dependency-ready item, then completion checks. It also warns when branch or `HEAD` differs from the checkpoint.
 
 ## Dashboard
 
-`create` installs `plan-dashboard.html` automatically the first time (never overwrites an existing copy). Run `python3 scripts/planctl.py --root ROOT install-dashboard` only to force a refresh, for example after upgrading this skill to pick up a newer bundled dashboard. Serve the repository over HTTP and open `plan-dashboard.html` — a bare `file://` open cannot fetch the JSON it reads. The dashboard is read-only and reads the authoritative registry plus generated/frozen status files. Its task section can switch between a list and a Plan DAG derived directly from each item's `dependsOn`; the graph is never stored as separate plan state.
+`create` and migration install `qing-plans/dashboard.html` plus a `.gitignore` for the lock file; the viewer is the only non-data artifact a repository receives. Run `refresh-status` when the dashboard needs a fresh Git observation without changing plan semantics. Run `install-dashboard` to refresh the viewer after upgrading this skill. Serve `qing-plans/` over HTTP; the dashboard shows handoff first, Plan/phase selection, Planned/Observed/Verified file rows (a verified badge downgrades to mismatched when observed attribution disagrees with the plan), a language toggle, clickable module relations, amendments, and issues. Its per-plan impact map reads only that plan's own `status.json` projection — frozen at completion for terminal plans — never the live root `project-map.json`; the "global map" toggle is the only view that reads the live map.
 
-## Report back
+## Write and report in the user's language
 
-Report only the current plan and phase, item just changed, completed/total count, stop reason or open problems, and next actionable item.
+Write goals, purposes, reasons, evidence, issues, stop reasons, and next actions in the user's language. Report the current plan and phase, item just changed, completed/total count, handoff portability or blocker, and next action.

@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
-# Regression test: authoritative registry, clean activation baseline,
-# dependency/state guards, exact Git actions, completion gates, frozen terminal
-# status, event history, and paused-plan slot ownership.
+# V2 regression: review policies, project map, immutable amendments/evidence,
+# execution attribution, handoff, terminal freezing, and safe V1 migration.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLANCTL="$SCRIPT_DIR/planctl.py"
-WORKDIR="$(mktemp -d)"
-trap 'rm -rf "$WORKDIR"' EXIT
-
-P() { python3 "$PLANCTL" --root "$WORKDIR" "$@"; }
+TEST_ROOT="$(mktemp -d)"
+trap 'rm -rf "$TEST_ROOT"' EXIT
 
 pass=0
 fail=0
@@ -24,273 +21,289 @@ check() {
 }
 expect_die() {
   local desc="$1"; shift
-  if "$@" >/tmp/planctl-smoke-out.$$ 2>&1; then
+  if "$@" >"$TEST_ROOT/expected-failure.out" 2>&1; then
     fail=$((fail + 1))
     echo "FAIL: $desc — expected rejection"
   else
     pass=$((pass + 1))
   fi
 }
+new_repo() {
+  local root="$1"
+  mkdir -p "$root"
+  git -C "$root" init -q
+  git -C "$root" config user.email test@example.com
+  git -C "$root" config user.name test
+  printf 'baseline\n' >"$root/baseline.txt"
+  git -C "$root" add baseline.txt
+  git -C "$root" commit -qm baseline
+}
 
-mkdir -p "$WORKDIR/packages/contracts" "$WORKDIR/apps/service" "$WORKDIR/docs/architecture" "$WORKDIR/docs/implementation"
-git -C "$WORKDIR" init -q
-git -C "$WORKDIR" config user.email t@example.com
-git -C "$WORKDIR" config user.name t
-printf 'baseline\n' > "$WORKDIR/packages/contracts/command.ts"
-git -C "$WORKDIR" add packages/contracts/command.ts
-git -C "$WORKDIR" commit -qm baseline
+###############################################################################
+# single: stale reviews, map, amendments, attribution, resume, frozen terminal.
+###############################################################################
+V2="$TEST_ROOT/v2-single"
+new_repo "$V2"
+printf '# Existing instructions\n' >"$V2/AGENTS.md"
+git -C "$V2" add AGENTS.md
+git -C "$V2" commit -qm agents
+P() { python3 "$PLANCTL" --root "$V2" "$@"; }
 
-# Draft creation does not capture a baseline or occupy the current slot.
-expect_die "plan creation requires a planner subagent" \
-  P create --slug human-plan --name Human --goal invalid --actor human-planner --actor-type human
-expect_die "plan creation requires an explicit planner identity" \
-  P create --slug unnamed-plan --name Unnamed --goal invalid
-P create --slug demo-plan --name "Demo plan" --goal "exercise plan tracking" --owner tester \
-  --actor planner-agent --actor-type agent \
-  --doc-mode required --doc-coverage all \
-  --doc-target "docs/architecture/**:sync architecture" \
-  --doc-target "docs/implementation/**:sync implementation" >/dev/null
-SCHEMA_VERSIONS="$(python3 -c "import glob,json;paths=['$WORKDIR/plans/index.json','$WORKDIR/plans/demo-plan/plan.json','$WORKDIR/plans/demo-plan/status.json',glob.glob('$WORKDIR/plans/demo-plan/events/*.json')[0]];print(' / '.join(str(json.load(open(p))['schemaVersion']) for p in paths))")"
-check "all stored artifacts start at schema version one" "$SCHEMA_VERSIONS" "1 / 1 / 1 / 1"
-INDEX_DRAFT="$(python3 -c "import json;d=json.load(open('$WORKDIR/plans/index.json'));e=d['plans'][0];print(str(d['currentPlanSlug'])+' / '+str(e['baselineCommit'])+' / '+e['state'])")"
-check "draft has no current slot or baseline" "$INDEX_DRAFT" "None / None / draft"
-check "create installs the dashboard automatically" "$(test -f "$WORKDIR/plan-dashboard.html" && echo yes || echo no)" "yes"
-PLAN_REVIEW_PENDING="$(python3 -c "import json;d=json.load(open('$WORKDIR/plans/demo-plan/plan.json'));print(d['planner']+' / '+d['planReview']['status'])")"
-check "draft records its planner and starts pending review" "$PLAN_REVIEW_PENDING" "planner-agent / pending"
-python3 -c "import json; p='$WORKDIR/plans/demo-plan/plan.json'; d=json.load(open(p)); d.pop('phaseReviewGatesEnabled'); open(p, 'w').write(json.dumps(d))"
-expect_die "new drafts require phase-review gate metadata" \
-  P validate
-python3 -c "import json; p='$WORKDIR/plans/demo-plan/plan.json'; d=json.load(open(p)); d['phaseReviewGatesEnabled']=True; open(p, 'w').write(json.dumps(d))"
-
-expect_die "only recorded planner can edit a draft" \
-  P add-phase --plan demo-plan --id unauthorized --title Unauthorized --purpose invalid --actor other-agent --actor-type agent
-P add-phase --plan demo-plan --id ph1 --title "Phase one" --purpose "prove plan tracking" --actor planner-agent --actor-type agent >/dev/null
-P add-phase --plan demo-plan --id ph2 --title "Phase two" --purpose "prove phase-review gate" --actor planner-agent --actor-type agent >/dev/null
-expect_die "item requires file-impact declaration" \
-  P add-item --plan demo-plan --phase ph1 --id invalid --title Invalid --purpose invalid --verify-kind test --actor planner-agent --actor-type agent
-expect_die "item requires verification kind" \
-  P add-item --plan demo-plan --phase ph1 --id invalid --title Invalid --purpose invalid --file x:create --actor planner-agent --actor-type agent
-
-P add-item --plan demo-plan --phase ph1 --id i1 --title Contract --purpose "modify contract" \
-  --verify-kind test --file packages/contracts/command.ts:modify --actor planner-agent --actor-type agent >/dev/null
-P add-item --plan demo-plan --phase ph1 --id i2 --title Gateway --purpose "create gateway" \
-  --depends-on i1 --verify-kind test --file apps/service/gateway.ts:modify --actor planner-agent --actor-type agent >/dev/null
-P add-item --plan demo-plan --phase ph1 --id i3 --title Review --purpose "review behavior" \
-  --depends-on i2 --verify-kind llm-review --no-file-impact --actor planner-agent --actor-type agent >/dev/null
-P add-item --plan demo-plan --phase ph2 --id i4 --title Marker --purpose "create marker" \
-  --depends-on i3 --verify-kind test --file marker.txt:create --actor planner-agent --actor-type agent >/dev/null
-
-# Activation is human-only and rejects pre-existing dirty work.
-touch "$WORKDIR/preexisting.txt"
-expect_die "dirty activation is rejected" \
-  P transition --plan demo-plan --state active --reason approved --actor-type human
-rm "$WORKDIR/preexisting.txt"
-expect_die "activation is human-only" \
-  P transition --plan demo-plan --state active --reason approved
-expect_die "activation requires a passed independent plan review" \
-  P transition --plan demo-plan --state active --reason approved --actor-type human
-expect_die "planner cannot review their own plan" \
-  P review-plan --plan demo-plan --result pass --evidence self-review --actor planner-agent --actor-type agent
-expect_die "plan review requires an agent subagent" \
-  P review-plan --plan demo-plan --result pass --evidence human-review --actor human-reviewer --actor-type human
-expect_die "failed plan review requires a reason" \
-  P review-plan --plan demo-plan --result fail --evidence findings --actor reviewer-agent --actor-type agent
-P review-plan --plan demo-plan --result fail --evidence findings --reason "missing phase boundary" --actor reviewer-agent --actor-type agent >/dev/null
-PLAN_REVIEW_FAILED="$(python3 -c "import json;d=json.load(open('$WORKDIR/plans/demo-plan/plan.json'))['planReview'];print(d['status']+' / '+d['reviewer']+' / '+d['reason'])")"
-check "independent reviewer can record a failed review" "$PLAN_REVIEW_FAILED" "failed / reviewer-agent / missing phase boundary"
-P review-plan --plan demo-plan --result pass --evidence "complete draft" --actor reviewer-agent --actor-type agent >/dev/null
-P set-documentation-impact --plan demo-plan --mode required --coverage all \
-  --target "docs/architecture/**:sync architecture" --target "docs/implementation/**:sync implementation" \
+P create --slug demo-plan --name "Demo plan" --goal "Exercise V2" \
+  --review-policy single --doc-mode none --doc-reason "No public contract changes" \
   --actor planner-agent --actor-type agent >/dev/null
-PLAN_REVIEW_RESET="$(python3 -c "import json;d=json.load(open('$WORKDIR/plans/demo-plan/plan.json'))['planReview'];print(d['status']+' / '+str(d['reviewer']))")"
-check "draft structure change invalidates completed review" "$PLAN_REVIEW_RESET" "pending / None"
-expect_die "invalidated review blocks activation" \
+check "new store uses qing-plans" "$(test -f "$V2/qing-plans/index.json" && test ! -e "$V2/plans" && echo yes)" "yes"
+check "no runtime code is written into the repository" \
+  "$(find "$V2/qing-plans" \( -name '*.py' -o -name '*.pyc' -o -name 'qing_plan' -o -name '.runtime-version' \) | wc -l | tr -d ' ')" "0"
+check "dashboard moved inside qing-plans" "$(test -f "$V2/qing-plans/dashboard.html" && test ! -e "$V2/plan-dashboard.html" && echo yes)" "yes"
+check "AGENTS.md is left untouched" "$(grep -c 'qing-plans:start' "$V2/AGENTS.md" || true)" "0"
+check "all root artifacts use schema V2" "$(python3 -c "import json;print(json.load(open('$V2/qing-plans/index.json'))['schemaVersion'],json.load(open('$V2/qing-plans/project-map.json'))['schemaVersion'])")" "2 2"
+check "resume discovers the only unfinished draft" "$(P resume | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d["plan"]["slug"],d["nextAction"]["type"])')" "demo-plan plan-empty"
+expect_die "empty plan cannot activate" P transition --plan demo-plan --state active --reason approved --actor-type human
+
+P upsert-module --plan demo-plan --id runtime --name Runtime --description "Plan state" \
+  --path-pattern 'src/runtime/**' --reason "Track plan state" --evidence "runtime ownership" \
+  --actor planner-agent --actor-type agent >/dev/null
+P add-phase --plan demo-plan --id phase-1 --title Foundation --purpose "Build runtime" \
+  --actor planner-agent --actor-type agent >/dev/null
+expect_die "file item requires module and reason" \
+  P add-item --plan demo-plan --phase phase-1 --id invalid --title Invalid --purpose Invalid \
+    --verify-kind test --file src/runtime/main.py:create --actor planner-agent --actor-type agent
+P add-item --plan demo-plan --phase phase-1 --id i1 --title Runtime --purpose "Change runtime" \
+  --verify-kind test --module runtime --change-reason "Create portable runtime" \
+  --file src/runtime/main.py:create --actor planner-agent --actor-type agent >/dev/null
+check "unfinished reviewed-policy draft requests review" "$(P resume | python3 -c 'import json,sys;print(json.load(sys.stdin)["nextAction"]["type"])')" "review-plan"
+P review-plan --plan demo-plan --result pass --evidence "Plan is coherent" \
+  --actor reviewer-agent --actor-type agent >/dev/null
+P upsert-module --plan demo-plan --id dashboard --name Dashboard --description "Read projections" \
+  --path-pattern 'ui/**' --reason "Present review state" --evidence "dashboard contract" \
+  --actor planner-agent --actor-type agent >/dev/null
+expect_die "map edit makes prior plan review stale" \
   P transition --plan demo-plan --state active --reason approved --actor-type human
-P review-plan --plan demo-plan --result pass --evidence "re-reviewed complete draft" --actor reviewer-agent --actor-type agent >/dev/null
+P upsert-dependency --plan demo-plan --module dashboard --depends-on runtime \
+  --reason "Dashboard reads status" --evidence "status contract" \
+  --actor planner-agent --actor-type agent >/dev/null
+P review-plan --plan demo-plan --result pass --evidence "Current plan and map reviewed" \
+  --actor reviewer-agent --actor-type agent >/dev/null
+touch "$V2/dirty.txt"
+expect_die "activation rejects dirty user files" P transition --plan demo-plan --state active --reason approved --actor-type human
+rm "$V2/dirty.txt"
 P transition --plan demo-plan --state active --reason approved --actor-type human >/dev/null
-CURRENT="$(python3 -c "import json;d=json.load(open('$WORKDIR/plans/index.json'));e=d['plans'][0];print(d['currentPlanSlug']+' / '+e['state']+' / '+str(bool(e['baselineCommit'])))")"
-check "activation owns slot and captures baseline" "$CURRENT" "demo-plan / active / True"
+check "single review activates current plan" "$(python3 -c "import json;d=json.load(open('$V2/qing-plans/index.json'));print(d['currentPlanSlug'],d['plans'][0]['state'])")" "demo-plan active"
 
-# Dependencies are enforced for done, not merely displayed as readiness.
-expect_die "child cannot pass before dependency" \
-  P verify --item i2 --result pass --evidence premature --verified-by script
+status_hash_before="$(shasum -a 256 "$V2/qing-plans/demo-plan/status.json" | cut -d' ' -f1)"
+P show >/dev/null
+P resume >/dev/null
+status_hash_after="$(shasum -a 256 "$V2/qing-plans/demo-plan/status.json" | cut -d' ' -f1)"
+check "show and resume are read-only" "$status_hash_after" "$status_hash_before"
 
-printf 'updated\n' > "$WORKDIR/packages/contracts/command.ts"
-P verify --item i1 --result pass --evidence "contract test passed" --verified-by script --actor implementer-agent --actor-type agent >/dev/null
+P update-item --item i1 --status in-progress --actor worker-agent --actor-type agent >/dev/null
+check "in-progress captures start snapshot" "$(python3 -c "import json;d=json.load(open('$V2/qing-plans/demo-plan/plan.json'));e=d['phases'][0]['items'][0]['execution'];print(bool(e['startHead']),e['plannedSnapshots'][0]['exists'])")" "True False"
+P propose-amendment --kind corrective --reason "Add generated manifest" --evidence "Runtime needs discovery" \
+  --operation '{"op":"add-file","itemId":"i1","moduleId":"runtime","reason":"Expose runtime manifest","path":"src/runtime/manifest.json","action":"create"}' \
+  --actor worker-agent --actor-type agent >/dev/null
+AMENDMENT="$(python3 -c "import json;print(json.load(open('$V2/qing-plans/demo-plan/plan.json'))['amendments'][0]['id'])")"
+check "single amendment waits for independent review" "$(python3 -c "import json;print(json.load(open('$V2/qing-plans/demo-plan/plan.json'))['amendments'][0]['status'])")" "pending-review"
+check "resume prioritizes amendment gate" "$(P resume | python3 -c 'import json,sys;print(json.load(sys.stdin)["nextAction"]["type"])')" "amendment-gate"
+expect_die "amendment proposer cannot self-review" P review-amendment --amendment "$AMENDMENT" --result pass --evidence self --actor worker-agent --actor-type agent
+P review-amendment --amendment "$AMENDMENT" --result pass --evidence "Bounded correction" \
+  --actor amendment-reviewer --actor-type agent >/dev/null
+check "applied amendment records before and after revisions" "$(python3 -c "import json; a=json.load(open('$V2/qing-plans/demo-plan/plan.json'))['amendments'][0];print(a['status'],a['before']['planRevision'] < a['after']['planRevision'])")" "applied True"
 
-# Off-plan changes are current-plan local and clear only when this plan claims them.
-touch "$WORKDIR/apps/service/sneaky.ts"
-OFF_BEFORE="$(P show | python3 -c "import json,sys;print(json.load(sys.stdin)['changeCoverage']['unexpected'])")"
-check "off-plan file is detected" "$OFF_BEFORE" "1"
-P update-item --item i1 --status done --evidence "contract test passed" --verified-by script \
-  --file apps/service/sneaky.ts:create --actor implementer-agent --actor-type agent >/dev/null
-OFF_AFTER="$(P show | python3 -c "import json,sys;print(json.load(sys.stdin)['changeCoverage']['unexpected'])")"
-check "current item declaration clears off-plan file" "$OFF_AFTER" "0"
-
-# Exact action semantics: expected modify does not accept observed create.
-touch "$WORKDIR/apps/service/gateway.ts"
-P verify --item i2 --result pass --evidence "gateway test passed" --verified-by script --actor implementer-agent --actor-type agent >/dev/null
-MISMATCH="$(P show | python3 -c "import json,sys;d=json.load(sys.stdin);print(d['changeCoverage']['mismatched'])")"
-check "create does not satisfy modify" "$MISMATCH" "1"
-
-P verify --item i3 --result pass --evidence "reviewed" --verified-by llm --actor implementer-agent --actor-type agent >/dev/null
-PHASE_ONE_PENDING="$(P show | python3 -c "import json,sys;d=json.load(sys.stdin);p=d['phases'][0];print(p['phaseReview']['status']+' / '+p['executionGate']['status'])")"
-check "completed phase requests independent review" "$PHASE_ONE_PENDING" "pending / open"
-expect_die "unreviewed phase blocks subsequent phase" \
-  P update-item --item i4 --status in-progress --actor implementer-agent --actor-type agent
-expect_die "phase reviewer cannot review their own completed item" \
-  P review-phase --phase ph1 --result pass --evidence self-review --actor implementer-agent --actor-type agent
-expect_die "failed phase review requires a reason" \
-  P review-phase --phase ph1 --result fail --evidence findings --actor phase-reviewer-agent --actor-type agent
-P review-phase --phase ph1 --result fail --evidence findings --reason "need boundary check" --actor phase-reviewer-agent --actor-type agent >/dev/null
-PHASE_ONE_FAILED="$(P show | python3 -c "import json,sys;print(json.load(sys.stdin)['phases'][0]['phaseReview']['status'])")"
-check "failed phase review keeps the phase gate closed" "$PHASE_ONE_FAILED" "failed"
-expect_die "failed phase review still blocks subsequent phase" \
-  P update-item --item i4 --status in-progress --actor implementer-agent --actor-type agent
-P review-phase --phase ph1 --result pass --evidence "boundary checked" --actor phase-reviewer-agent --actor-type agent >/dev/null
-PHASE_TWO_GATE="$(P show | python3 -c "import json,sys;print(json.load(sys.stdin)['phases'][1]['executionGate']['status'])")"
-check "passed phase review opens the subsequent phase gate" "$PHASE_TWO_GATE" "open"
-P update-item --item i4 --status in-progress --actor implementer-agent --actor-type agent >/dev/null
-P verify --item i4 --result pass --evidence "marker test passed" --verified-by script --actor implementer-agent --actor-type agent >/dev/null
-expect_die "final phase cannot self-review" \
-  P review-phase --phase ph2 --result pass --evidence self-review --actor implementer-agent --actor-type agent
-P review-phase --phase ph2 --result pass --evidence "marker behavior checked" --actor phase-reviewer-agent --actor-type agent >/dev/null
-PLANNED_ISSUES="$(P show | python3 -c "import json,sys;d=json.load(sys.stdin);print(sum(i['type']=='planned-file-mismatch' for i in d['derivedIssues']))")"
-check "done-item mismatch and pending file surface as issues" "$PLANNED_ISSUES" "2"
-PLANNED_NEXT="$(P show | python3 -c "import json,sys;d=json.load(sys.stdin);print(sum(n['type']=='issue' and n['id'].startswith('derived-planned-file-mismatch-') for n in d['nextActions']))")"
-check "planned-file issues appear in nextActions" "$PLANNED_NEXT" "2"
-expect_die "completion rejects mismatch and pending file" \
-  P transition --state completed --reason done --actor-type human
-
-# Correct the declaration and create the pending file.
-P update-item --item i2 --status done --evidence "gateway test passed" --verified-by script \
-  --file apps/service/gateway.ts:create --actor implementer-agent --actor-type agent >/dev/null
-P review-phase --phase ph1 --result pass --evidence "corrected declaration rechecked" --actor phase-reviewer-agent --actor-type agent >/dev/null
-touch "$WORKDIR/marker.txt"
-PLANNED_CLEAR="$(P show | python3 -c "import json,sys;d=json.load(sys.stdin);print(sum(i['type']=='planned-file-mismatch' for i in d['derivedIssues']))")"
-check "planned-file issues clear when observations match" "$PLANNED_CLEAR" "0"
-
-# A later create must not clobber a dashboard the user or a newer skill version already placed.
-echo "<!-- local marker -->" >> "$WORKDIR/plan-dashboard.html"
-
-# A paused plan keeps the current slot, so another draft cannot activate.
-P create --slug rival-plan --name Rival --goal rival --actor rival-planner --actor-type agent >/dev/null
-check "create does not overwrite an existing dashboard" \
-  "$(grep -c 'local marker' "$WORKDIR/plan-dashboard.html")" "1"
-P install-dashboard >/dev/null
-check "install-dashboard forces a refresh" \
-  "$(grep -c 'local marker' "$WORKDIR/plan-dashboard.html")" "0"
-
-# --root pointed at a single plan's own directory must be rejected, not
-# silently accepted as if it were the repository root.
-expect_die "--root inside a plan's own directory is rejected" \
-  python3 "$PLANCTL" --root "$WORKDIR/plans/demo-plan" show
-
-P transition --state paused --reason waiting --actor-type human >/dev/null
-PAUSED="$(python3 -c "import json;d=json.load(open('$WORKDIR/plans/index.json'));print(d['currentPlanSlug']+' / '+d['plans'][0]['state'])")"
-check "paused plan retains current slot" "$PAUSED" "demo-plan / paused"
-expect_die "draft cannot activate while a plan is paused" \
-  P transition --plan rival-plan --state active --reason try --actor-type human
-expect_die "paused plan is read-only" \
-  P add-issue --title blocked --detail blocked --next-action resume
-P transition --state active --reason resume --actor-type human >/dev/null
-
-# Documentation targets are exact completion gates.
-touch "$WORKDIR/docs/architecture/overview.md"
-DOC_PARTIAL="$(P show | python3 -c "import json,sys;print(json.load(sys.stdin)['documentationImpact']['status'])")"
-check "partial documentation coverage fails" "$DOC_PARTIAL" "fail"
-touch "$WORKDIR/docs/implementation/plan.md"
-DOC_FULL="$(P show | python3 -c "import json,sys;print(json.load(sys.stdin)['documentationImpact']['status'])")"
-check "full documentation coverage passes" "$DOC_FULL" "pass"
-
-P transition --state completed --reason "all verified" --actor-type human >/dev/null
-FINAL="$(python3 -c "import json;d=json.load(open('$WORKDIR/plans/index.json'));print(str(d['currentPlanSlug'])+' / '+d['plans'][0]['state'])")"
-check "completion releases current slot" "$FINAL" "None / completed"
-
-# Terminal status is frozen and terminal plans are immutable.
-FROZEN_AT="$(python3 -c "import json;print(json.load(open('$WORKDIR/plans/demo-plan/status.json'))['generatedAt'])")"
-printf 'later change\n' >> "$WORKDIR/packages/contracts/command.ts"
-SHOW_AT="$(P show --plan demo-plan | python3 -c "import json,sys;print(json.load(sys.stdin)['generatedAt'])")"
-check "completed status is frozen" "$SHOW_AT" "$FROZEN_AT"
-expect_die "completed plan cannot gain phases" \
-  P add-phase --plan demo-plan --id after --title After --purpose invalid
-
-EVENTS="$(P history --plan demo-plan | python3 -c "import json,sys;print(len(json.load(sys.stdin)['events']) > 5)")"
-check "history command reads audit events" "$EVENTS" "True"
+mkdir -p "$V2/src/runtime"
+printf 'print("ok")\n' >"$V2/src/runtime/main.py"
+printf '{}\n' >"$V2/src/runtime/manifest.json"
+plan_hash_before="$(shasum -a 256 "$V2/qing-plans/demo-plan/plan.json" | cut -d' ' -f1)"
+P refresh-status >/dev/null
+check "explicit status refresh observes Git without changing plan" \
+  "$(P show | python3 -c 'import json,sys;print(json.load(sys.stdin)["changeCoverage"]["observed"])')/$(shasum -a 256 "$V2/qing-plans/demo-plan/plan.json" | cut -d' ' -f1)" \
+  "2/$plan_hash_before"
+expect_die "verification source must match kind" P verify --item i1 --result pass --evidence ok --verified-by llm
+P verify --item i1 --result not-run --evidence "test scheduled" --verified-by script --actor worker-agent --actor-type agent >/dev/null
+P verify --item i1 --result fail --evidence "one transient failure" --reason "fixture race" \
+  --verified-by script --actor worker-agent --actor-type agent >/dev/null
+check "resume prioritizes failed work" "$(P resume | python3 -c 'import json,sys;print(json.load(sys.stdin)["nextAction"]["type"])')" "address-item"
+P update-item --item i1 --status in-progress --actor worker-agent --actor-type agent >/dev/null
+P verify --item i1 --result pass --evidence "runtime tests passed" --verified-by script \
+  --actor worker-agent --actor-type agent >/dev/null
+check "verification and execution retries are append-only" "$(python3 -c "import json; i=json.load(open('$V2/qing-plans/demo-plan/plan.json'))['phases'][0]['items'][0];print(len(i['verificationAttempts']),len(i['executionAttempts']),i['status'])")" "3 2 done"
+check "retry history preserves the attempt that created each file" \
+  "$(python3 -c "import json;i=json.load(open('$V2/qing-plans/demo-plan/plan.json'))['phases'][0]['items'][0];print('|'.join(','.join(o['observedAction'] for o in a['observedFiles']) for a in i['executionAttempts']))")" \
+  "create,create|unchanged,unchanged"
+check "module relations derive upstream/downstream" "$(P show | python3 -c 'import json,sys;d=json.load(sys.stdin);m={x["id"]:x for x in d["projectMap"]["modules"]};print(m["dashboard"]["upstream"],m["runtime"]["downstream"])')" "['runtime'] ['dashboard']"
+check "resume reaches completion checks" "$(P resume | python3 -c 'import json,sys;print(json.load(sys.stdin)["nextAction"]["type"])')" "completion-check"
+P checkpoint --reason "Ready to complete" --next-action "Run completion transition" \
+  --actor worker-agent --actor-type agent >/dev/null
+check "dirty code checkpoint is local-only" "$(P resume | python3 -c 'import json,sys;print(json.load(sys.stdin)["handoff"]["portability"])')" "local-only"
+git -C "$V2" add AGENTS.md qing-plans src
+git -C "$V2" commit -qm "portable checkpoint"
+git init --bare -q "$TEST_ROOT/v2-remote.git"
+git -C "$V2" remote add origin "$TEST_ROOT/v2-remote.git"
+git -C "$V2" push -qu origin HEAD
+check "committed code and plan checkpoint become portable" "$(P resume | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d["handoff"]["portability"],len(d["handoff"]["currentDirtyPaths"]))')" "portable 0"
+P transition --state completed --reason "All verified" --actor-type human >/dev/null
+check "terminal freeze retains final observed file/module impact" \
+  "$(P show --plan demo-plan | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d["changeCoverage"]["observed"],d["summary"]["changedModules"],d["nextActions"][0]["type"])')" \
+  "2 1 terminal"
+FROZEN="$(shasum -a 256 "$V2/qing-plans/demo-plan/status.json" | cut -d' ' -f1)"
+printf '# later\n' >>"$V2/src/runtime/main.py"
+P show --plan demo-plan >/dev/null
+check "terminal status stays frozen" "$(shasum -a 256 "$V2/qing-plans/demo-plan/status.json" | cut -d' ' -f1)" "$FROZEN"
+expect_die "terminal plan is immutable" P add-issue --plan demo-plan --title Later --detail Later --next-action Later
 P validate >/dev/null
-pass=$((pass + 1))
 
-# A plan-peer-review-era active plan has planner metadata but no phase gate
-# fields. It remains valid and treats its prior phases as passed, while new
-# drafts above still require phaseReviewGatesEnabled.
-LEGACYDIR="$WORKDIR/legacy-phase-gate-repo"
-mkdir -p "$LEGACYDIR"
-git -C "$LEGACYDIR" init -q
-git -C "$LEGACYDIR" config user.email t@example.com
-git -C "$LEGACYDIR" config user.name t
-git -C "$LEGACYDIR" commit --allow-empty -qm baseline
-P3() { python3 "$PLANCTL" --root "$LEGACYDIR" "$@"; }
-P3 create --slug legacy-plan --name Legacy --goal legacy --actor legacy-planner --actor-type agent >/dev/null
-P3 add-phase --plan legacy-plan --id legacy-1 --title One --purpose one --actor legacy-planner --actor-type agent >/dev/null
-P3 add-phase --plan legacy-plan --id legacy-2 --title Two --purpose two --actor legacy-planner --actor-type agent >/dev/null
-P3 add-item --plan legacy-plan --phase legacy-1 --id legacy-i1 --title One --purpose one --verify-kind manual --no-file-impact --actor legacy-planner --actor-type agent >/dev/null
-P3 add-item --plan legacy-plan --phase legacy-2 --id legacy-i2 --title Two --purpose two --verify-kind manual --no-file-impact --actor legacy-planner --actor-type agent >/dev/null
-P3 review-plan --plan legacy-plan --result pass --evidence reviewed --actor legacy-reviewer --actor-type agent >/dev/null
-P3 transition --plan legacy-plan --state active --reason approved --actor-type human >/dev/null
-python3 -c "import json; p='$LEGACYDIR/plans/legacy-plan/plan.json'; d=json.load(open(p)); d.pop('phaseReviewGatesEnabled'); [phase.pop('phaseReview') for phase in d['phases']]; [item.pop('completedBy') for phase in d['phases'] for item in phase['items']]; open(p, 'w').write(json.dumps(d))"
-LEGACY_VALID="$(P3 validate | python3 -c "import json,sys;print(json.load(sys.stdin)['valid'])")"
-check "legacy active plan without phase gates remains valid" "$LEGACY_VALID" "True"
-P3 update-item --item legacy-i2 --status in-progress --actor legacy-worker --actor-type agent >/dev/null
-LEGACY_GATE="$(P3 show | python3 -c "import json,sys;print(json.load(sys.stdin)['phases'][1]['executionGate']['status'])")"
-check "legacy phase is interpreted as passed for a later phase gate" "$LEGACY_GATE" "open"
+###############################################################################
+# none: automatic temporary amendment and cleanup completion gate.
+###############################################################################
+NONE="$TEST_ROOT/v2-none"
+new_repo "$NONE"
+N() { python3 "$PLANCTL" --root "$NONE" "$@"; }
+N create --slug quick-plan --name Quick --goal "Test none" --review-policy none \
+  --doc-mode none --doc-reason "No docs" --actor planner --actor-type agent >/dev/null
+N upsert-module --plan quick-plan --id core --name Core --description Core --path-pattern 'core/**' \
+  --reason "Own quick-plan files" --evidence "test fixture" --actor planner --actor-type agent >/dev/null
+N add-phase --plan quick-plan --id p1 --title Work --purpose Work --actor planner --actor-type agent >/dev/null
+N add-item --plan quick-plan --phase p1 --id main --title Main --purpose Main --verify-kind test \
+  --module core --change-reason Main --file core/main.txt:create --actor planner --actor-type agent >/dev/null
+N add-item --plan quick-plan --phase p1 --id cleanup --title Cleanup --purpose Cleanup --depends-on main \
+  --verify-kind manual --no-file-impact --actor planner --actor-type agent >/dev/null
+N transition --plan quick-plan --state active --reason approved --actor-type human >/dev/null
+N propose-amendment --kind temporary --reason "Temporary marker" --evidence "Needed during rollout" \
+  --cleanup-item cleanup --operation '{"op":"add-file","itemId":"main","moduleId":"core","reason":"Temporary marker","path":"core/temp.txt","action":"create"}' \
+  --actor worker --actor-type agent >/dev/null
+check "none applies valid amendment immediately" "$(python3 -c "import json;print(json.load(open('$NONE/qing-plans/quick-plan/plan.json'))['amendments'][0]['status'])")" "applied"
+N update-item --item main --status in-progress --actor worker --actor-type agent >/dev/null
+mkdir -p "$NONE/core"; touch "$NONE/core/main.txt" "$NONE/core/temp.txt"
+N verify --item main --result pass --evidence passed --verified-by script --actor worker --actor-type agent >/dev/null
+expect_die "temporary cleanup blocks completion" N transition --state completed --reason done --actor-type human
+N update-item --item cleanup --status in-progress --actor worker --actor-type agent >/dev/null
+N verify --item cleanup --result pass --evidence "marker cleanup confirmed" --verified-by human --actor user-confirmation --actor-type human >/dev/null
+N transition --state completed --reason done --actor-type human >/dev/null
+check "none plan completes after cleanup" "$(N show --plan quick-plan | python3 -c 'import json,sys;print(json.load(sys.stdin)["plan"]["state"])')" "completed"
 
-# Switch is terminal replacement, and the repository lock prevents lost updates.
-SWITCHDIR="$WORKDIR/switch-repo"
-mkdir -p "$SWITCHDIR"
-git -C "$SWITCHDIR" init -q
-git -C "$SWITCHDIR" config user.email t@example.com
-git -C "$SWITCHDIR" config user.name t
-git -C "$SWITCHDIR" commit --allow-empty -qm baseline
-P2() { python3 "$PLANCTL" --root "$SWITCHDIR" "$@"; }
-P2 create --slug old-plan --name Old --goal old --actor old-planner --actor-type agent >/dev/null
-P2 review-plan --plan old-plan --result pass --evidence reviewed --actor old-reviewer --actor-type agent >/dev/null
-P2 transition --plan old-plan --state active --reason approved --actor-type human >/dev/null
-P2 create --slug unreviewed-plan --name Unreviewed --goal unreviewed --actor unreviewed-planner --actor-type agent >/dev/null
-expect_die "switch rejects an unreviewed target draft" \
-  P2 switch --to unreviewed-plan --reason replacement --actor-type human
-P2 create --slug new-plan --name New --goal new --actor new-planner --actor-type agent >/dev/null
-P2 review-plan --plan new-plan --result pass --evidence reviewed --actor new-reviewer --actor-type agent >/dev/null
-P2 switch --to new-plan --reason replacement --actor-type human >/dev/null
-SWITCHED="$(python3 -c "import json;d=json.load(open('$SWITCHDIR/plans/index.json'));m={e['slug']:e for e in d['plans']};print(d['currentPlanSlug']+' / '+m['old-plan']['state']+' / '+m['old-plan']['replacedBy'])")"
-check "switch terminates old plan and activates draft" "$SWITCHED" "new-plan / cancelled / new-plan"
+###############################################################################
+# V1: read-only discovery, dry run, verified atomic migration, both-dir rule.
+###############################################################################
+LEGACY="$TEST_ROOT/legacy"
+new_repo "$LEGACY"
+mkdir -p "$LEGACY/plans/old-plan/events" "$LEGACY/plans/active-plan/events"
+python3 - "$LEGACY" <<'PY'
+import json, subprocess, sys
+from pathlib import Path
+root = Path(sys.argv[1]); stamp = "2026-01-01T00:00:00Z"
+head = subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip()
+entry = {"slug":"old-plan","name":"Old plan","state":"completed","path":"old-plan/plan.json","createdAt":stamp,"updatedAt":stamp,"activatedAt":stamp,"baselineCommit":head,"replacedBy":None}
+active_entry = {"slug":"active-plan","name":"Active plan","state":"active","path":"active-plan/plan.json","createdAt":stamp,"updatedAt":stamp,"activatedAt":stamp,"baselineCommit":head,"replacedBy":None}
+index = {"schemaVersion":1,"revision":7,"currentPlanSlug":"active-plan","updatedAt":stamp,"plans":[entry,active_entry]}
+item = {"id":"i1","title":"Old item","purpose":"Modify baseline","dependsOn":[],"status":"done","verifyKind":"test","verifiedBy":"script","completedBy":"worker","evidence":"old tests passed","reason":None,"noFileImpact":False,"plannedFiles":[{"path":"baseline.txt","action":"modify","from":None}],"updatedAt":stamp}
+review = {"status":"passed","reviewer":"reviewer","evidence":"old review","reason":None,"reviewedAt":stamp}
+plan = {"schemaVersion":1,"slug":"old-plan","goal":"Legacy goal","owner":"owner","planner":"planner","phaseReviewGatesEnabled":True,"planReview":review,"createdAt":stamp,"updatedAt":stamp,"currentPhaseId":"p1","documentationImpact":{"mode":"none","coverage":"all","reason":"none","targets":[]},"phases":[{"id":"p1","title":"Old phase","purpose":"Old","phaseReview":review,"items":[item]}],"checkpoint":{"currentItemId":None,"lastCompletedItemId":"i1","stopReason":None,"updatedAt":stamp},"issues":[]}
+status = {"schemaVersion":1,"generatedAt":stamp,"plan":{"slug":"old-plan","state":"completed"},"changeCoverage":{"planned":1,"observed":1,"pending":0,"mismatched":0,"unexpected":0},"documentationImpact":{"status":"skipped"},"derivedIssues":[]}
+event = {"schemaVersion":1,"eventId":"legacy-event","occurredAt":stamp,"type":"item-verified","planSlug":"old-plan","actor":"worker","actorType":"agent","details":{}}
+active_item = {"id":"next","title":"Continue work","purpose":"Resume after migration","dependsOn":[],"status":"not-started","verifyKind":"manual","verifiedBy":"unverified","completedBy":None,"evidence":None,"reason":None,"noFileImpact":True,"plannedFiles":[],"updatedAt":stamp}
+active_plan = {**plan,"slug":"active-plan","goal":"Continue legacy work","currentPhaseId":"p1","phases":[{"id":"p1","title":"Continue","purpose":"Resume","phaseReview":{"status":"not-ready","reviewer":None,"evidence":None,"reason":None,"reviewedAt":None},"items":[active_item]}],"checkpoint":{"currentItemId":None,"lastCompletedItemId":None,"stopReason":"moved computers","updatedAt":stamp}}
+active_event = {**event,"eventId":"active-event","planSlug":"active-plan","type":"plan-transitioned"}
+for path, data in [(root/'plans/index.json',index),(root/'plans/old-plan/plan.json',plan),(root/'plans/old-plan/status.json',status),(root/'plans/old-plan/events/legacy.json',event),(root/'plans/active-plan/plan.json',active_plan),(root/'plans/active-plan/events/legacy.json',active_event)]:
+    path.write_text(json.dumps(data), encoding='utf-8')
+PY
+git -C "$LEGACY" add plans
+git -C "$LEGACY" commit -qm legacy
+L() { python3 "$PLANCTL" --root "$LEGACY" "$@"; }
+check "legacy validate is read-only V1" "$(L validate | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d["store"],d["readOnly"])')" "plans True"
+legacy_before="$(git -C "$LEGACY" status --porcelain)"
+L show --plan old-plan >/dev/null; L history --plan old-plan >/dev/null; L resume --plan old-plan >/dev/null
+check "legacy reads create no qing store" "$(test ! -e "$LEGACY/qing-plans" && [ "$(git -C "$LEGACY" status --porcelain)" = "$legacy_before" ] && echo yes)" "yes"
+expect_die "legacy mutation is rejected" L add-issue --plan old-plan --title X --detail X --next-action X
+check "dry run reports counts without writes" "$(L migrate-store --dry-run | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d["dryRun"],d["plans"],d["events"])')" "True 2 2"
+check "dry run still creates no qing store" "$(test ! -e "$LEGACY/qing-plans" && echo yes)" "yes"
+L migrate-store >/dev/null
+check "migration preserves legacy source" "$(test -f "$LEGACY/plans/index.json" && test -f "$LEGACY/qing-plans/migration.json" && echo yes)" "yes"
+check "migrated store validates in the both-directory state" "$(L validate | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d["store"],d["legacySafeToDelete"])')" "qing-plans True"
+check "migration installs the viewer without any runtime" "$(test -f "$LEGACY/qing-plans/dashboard.html" && test ! -e "$LEGACY/qing-plans/planctl.py" && test ! -e "$LEGACY/qing-plans/qing_plan" && echo yes)" "yes"
+check "active V1 plan gets a resumable V2 status" "$(L resume | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d["plan"]["slug"],d["plan"]["state"],d["nextAction"]["type"])')" "active-plan active start-item"
+check "legacy fields convert without recomputing terminal status" "$(python3 -c "import json;p=json.load(open('$LEGACY/qing-plans/old-plan/plan.json'));s=json.load(open('$LEGACY/qing-plans/old-plan/status.json'));print(p['schemaVersion'],p['phases'][0]['items'][0]['changeSets'][0]['moduleId'],len(p['reviews']),s['generatedAt'])")" "2 _unmapped 1 2026-01-01T00:00:00Z"
+check "migration manifest contains source hashes" "$(python3 -c "import json;m=json.load(open('$LEGACY/qing-plans/migration.json'));print(m['state'],m['safeToDeleteLegacy'],len(m['sourceFiles'])>0)")" "verified True True"
+python3 - "$LEGACY/qing-plans/migration.json" <<'PY'
+import json,sys
+p=sys.argv[1]; d=json.load(open(p)); d['state']='incomplete'; d['safeToDeleteLegacy']=False; open(p,'w').write(json.dumps(d))
+PY
+expect_die "both directories without verified manifest conflict" L validate
+python3 - "$LEGACY/qing-plans/migration.json" <<'PY'
+import json,sys
+p=sys.argv[1]; d=json.load(open(p)); d['state']='verified'; d['safeToDeleteLegacy']=True; open(p,'w').write(json.dumps(d))
+PY
+rm -rf "$LEGACY/plans"
+check "V2 remains valid after user deletes verified legacy store" "$(L validate | python3 -c 'import json,sys;print(json.load(sys.stdin)["valid"])')" "True"
 
-P2 create --slug draft-one --name One --goal one --actor draft-one-planner --actor-type agent >/dev/null &
-PID_ONE=$!
-P2 create --slug draft-two --name Two --goal two --actor draft-two-planner --actor-type agent >/dev/null &
-PID_TWO=$!
-wait "$PID_ONE"
-wait "$PID_TWO"
-PLAN_COUNT="$(P2 validate | python3 -c "import json,sys;print(json.load(sys.stdin)['plans'])")"
-check "locked concurrent creates preserve both updates" "$PLAN_COUNT" "5"
+###############################################################################
+# Regression coverage for review-timing and graph-integrity fixes.
+###############################################################################
+REG="$TEST_ROOT/v2-regressions"
+new_repo "$REG"
+R() { python3 "$PLANCTL" --root "$REG" "$@"; }
 
-DASHBOARD="$SCRIPT_DIR/../assets/dashboard.html"
-GRAPH_CONTAINER="$(grep -c 'id="plan-graph"' "$DASHBOARD")"
-GRAPH_RENDERER="$(grep -c 'function renderPlanGraph' "$DASHBOARD")"
-check "dashboard includes Plan DAG container" "$GRAPH_CONTAINER" "1"
-check "dashboard includes Plan DAG renderer" "$GRAPH_RENDERER" "1"
-MOBILE_GRID_AREAS="$(grep -c 'grid-template-areas:\"main copy\"' "$DASHBOARD")"
-MOBILE_DAG_HINT="$(grep -c '手机端可左右滑动查看完整依赖图' "$DASHBOARD")"
-VIEW_MODE_EXCLUSIVE="$(grep -c 'listView.hidden=planView!==\"list\";graphView.hidden=planView!==\"graph\"' "$DASHBOARD")"
-check "dashboard gives mobile task cards named layout areas" "$MOBILE_GRID_AREAS" "1"
-check "dashboard explains mobile DAG scrolling" "$MOBILE_DAG_HINT" "1"
-check "dashboard keeps list and DAG mutually exclusive" "$VIEW_MODE_EXCLUSIVE" "1"
-REVIEW_CONTAINER="$(grep -c 'id="reviews"' "$DASHBOARD")"
-REVIEW_RENDERER="$(grep -c 'function reviewCard' "$DASHBOARD")"
-NEXT_ACTION_RENDERER="$(grep -c '(data.nextActions||\[\]).forEach' "$DASHBOARD")"
-check "dashboard includes review gate container" "$REVIEW_CONTAINER" "1"
-check "dashboard renders review gate status" "$REVIEW_RENDERER" "1"
-check "dashboard renders next actions" "$NEXT_ACTION_RENDERER" "1"
+R create --slug reg-plan --name "Regressions" --goal "Guard fixed defects" \
+  --review-policy single --doc-mode none --doc-reason "No public contract changes" \
+  --actor planner-agent --actor-type agent >/dev/null
+R upsert-module --plan reg-plan --id mod-a --name A --description "Module A" \
+  --path-pattern 'a/**' --reason r --evidence e --actor planner-agent --actor-type agent >/dev/null
+R upsert-module --plan reg-plan --id mod-b --name B --description "Module B" \
+  --path-pattern 'b/**' --reason r --evidence e --actor planner-agent --actor-type agent >/dev/null
+R upsert-dependency --plan reg-plan --module mod-a --depends-on mod-b \
+  --reason r --evidence e --actor planner-agent --actor-type agent >/dev/null
+expect_die "a module dependency cycle is rejected before it is saved" \
+  R upsert-dependency --plan reg-plan --module mod-b --depends-on mod-a --reason r --evidence e \
+    --actor planner-agent --actor-type agent
+check "the rejected cycle left no dependency behind" \
+  "$(python3 -c "import json;d=json.load(open('$REG/qing-plans/project-map.json'));print(len(d['dependencies']))")" "1"
 
-echo ""
-echo "passed: $pass, failed: $fail"
-[ "$fail" -eq 0 ]
+R add-phase --plan reg-plan --id phase-1 --title Phase --purpose x --actor planner-agent --actor-type agent >/dev/null
+R add-item --plan reg-plan --phase phase-1 --id i1 --title Item --purpose x --module mod-a \
+  --change-reason x --file a/f.txt:modify --verify-kind test --actor planner-agent --actor-type agent >/dev/null
+R review-plan --plan reg-plan --result pass --evidence ok --actor reviewer-agent --actor-type agent >/dev/null
+R transition --plan reg-plan --state active --reason ok --actor-type human >/dev/null
+R propose-amendment --kind temporary --reason "Needs follow-up cleanup" --evidence "Scoped workaround" \
+  --operation '{"op":"add-item","phaseId":"phase-1","id":"i1-cleanup","title":"Cleanup","purpose":"Undo the workaround","verifyKind":"manual","noFileImpact":true}' \
+  --cleanup-item i1-cleanup --actor implementer-agent --actor-type agent >/dev/null
+check "a pending temporary amendment naming its own not-yet-applied cleanup item is still valid" \
+  "$(R validate | python3 -c 'import json,sys;print(json.load(sys.stdin)["valid"])')" "True"
+
+check "AGENTS.md is never created by this skill" "$(test -e "$REG/AGENTS.md" && echo yes || echo no)" "no"
+check "the store stays free of runtime code through a full plan lifecycle" \
+  "$(find "$REG/qing-plans" \( -name '*.py' -o -name '*.pyc' -o -name 'qing_plan' -o -name '.runtime-version' \) | wc -l | tr -d ' ')" "0"
+check "install-dashboard refreshes the viewer and nothing else" \
+  "$(R install-dashboard | python3 -c 'import json,sys;print(",".join(sorted(p.rsplit("/",1)[-1] for p in json.load(sys.stdin)["installed"])))')" ".gitignore,dashboard.html"
+
+mkdir -p "$REG/a"
+printf 'work in progress\n' >"$REG/a/f.txt"
+R update-item --plan reg-plan --item i1 --status in-progress --actor worker-agent --actor-type agent >/dev/null
+R checkpoint --plan reg-plan --item i1 --reason "Stopping midway for the day" \
+  --next-action "Finish i1, then verify" --actor worker-agent --actor-type agent >/dev/null
+git -C "$REG" add -A
+git -C "$REG" commit -qm "checkpoint: i1 in progress" >/dev/null
+check "committing the checkpoint together with code raises no false HEAD-divergence warning" \
+  "$(R resume | python3 -c 'import json,sys;w=json.load(sys.stdin)["handoff"]["warnings"];print(any("HEAD" in x for x in w))')" "False"
+
+###############################################################################
+# A repository with no store yet: clear guidance, and no leftover directory.
+###############################################################################
+FRESH="$TEST_ROOT/no-store-yet"
+new_repo "$FRESH"
+F() { python3 "$PLANCTL" --root "$FRESH" "$@"; }
+
+expect_die "install-dashboard refuses to run before a store exists" F install-dashboard
+check "a refusal names the command that creates the store" \
+  "$(F validate 2>&1 >/dev/null | grep -c 'run `create`')" "1"
+check "a command that writes nothing leaves no store directory behind" \
+  "$(test -e "$FRESH/qing-plans" && echo leftover || echo clean)" "clean"
+check "the repository stays clean after failed commands" "$(git -C "$FRESH" status --porcelain)" ""
+F create --slug first-plan --name First --goal "Start the store" \
+  --actor planner-agent --actor-type agent >/dev/null
+check "create still builds the store and installs the viewer" \
+  "$(test -f "$FRESH/qing-plans/index.json" && test -f "$FRESH/qing-plans/dashboard.html" && echo yes)" "yes"
+
+python3 -m py_compile "$SCRIPT_DIR/planctl.py" "$SCRIPT_DIR"/qing_plan/*.py
+check "source package compiles" "$?" "0"
+
+echo "track-ai-plans V2 smoke tests: $pass passed, $fail failed"
+test "$fail" -eq 0

@@ -1,4 +1,4 @@
 interface:
   display_name: "Track AI Plans"
-  short_description: "Run one verified Git-backed AI work plan"
-  default_prompt: "Use $track-ai-plans to create or continue the current plan and report verified progress, blockers, and next actions."
+  short_description: "Resume explainable long AI work across agents"
+  default_prompt: "Use $track-ai-plans to discover or create the current Qing Plan, preserve file/module reasons and handoff context, and report verified progress and the next action."
