@@ -1,3 +1,35 @@
+## 4.0.0 - 2026-08-11
+
+### 破坏性变更
+- track-ai-plans：V2 计划与仪表盘迁移到 `qing-plans/` 存储；保留旧版 `plans/` 的安全只读支持与分阶段迁移
+- track-ai-plans：用 `none` 与 `single` 两种审查策略取代逐阶段审查门禁；`single` 由独立 agent 审查初始计划与重大范围修订
+
+### 新功能
+- track-ai-plans：跨 agent、跨电脑确定性发现未完成计划，配合明确的检查点、可交接性判断与暂停计划保护
+- track-ai-plans：维护 AI 持续更新的项目地图、模块依赖、计划/实际/已验证文件、修改原因、执行归因、修正案、问题与只增不改的验证记录
+- track-ai-plans：新增按模块组织的仪表盘，支持计划/阶段选择、依赖关系可视化、文件证据、修正案与交接状态
+- track-ai-plans：仪表盘新增中英文切换，按浏览器持久化
+- track-ai-plans：新增分阶段、哈希校验的 V1 迁移，保留旧库并在安全可删除时明确提示
+
+### 修复
+- track-ai-plans：运行时只保留在 skill 内，仓库中只安装 `dashboard.html`；不再向仓库写入可执行副本，避免其与写入它的 skill 静默失步
+- track-ai-plans：仓库还没有计划 store 时，`install-dashboard`、`validate`、`resume` 给出明确的下一步提示而非裸文件缺失报错，且失败的命令不再留下空的 `qing-plans/` 目录
+- track-ai-plans：在 `upsert-dependency` 时就拒绝会形成环的模块依赖，而不是等到 `validate` 才发现且无法撤销
+- track-ai-plans：修复 `validate` 对"清理项由该修正案自身尚未应用的操作创建"的待审临时修正案误报失败的问题
+- track-ai-plans：仪表盘的单计划影响图与依赖边只读取该计划自身冻结的 `status.json` 投影，不再读取实时的根 `project-map.json`，避免已完成/已取消计划的地图被后续计划的模块或依赖修改影响
+- track-ai-plans：当观测到的动作与计划动作不一致时，仪表盘的文件验证徽章从"已验证"降级为"不一致"，与阻塞完成的检查保持一致
+- track-ai-plans：不再向用户仓库写入 `__pycache__`，此前它会导致即使提交干净也被判定为 `local-only`
+- track-ai-plans：不再向仓库根目录写入 `AGENTS.md` 发现区块；`qing-plans/index.json` 的发现已经通过 skill 自身的 Preflight 说明完成
+- track-ai-plans：改用祖先关系而非严格相等来比较检查点记录的 commit 与当前 `HEAD`，因为检查点记录的 commit 总是比它与代码一起提交的那一刻早一个提交——旧检查会在每次正确提交并推送的交接上误报"HEAD 与检查点不一致"
+
+### 重构
+- track-ai-plans：将计划运行时拆分为 storage、domain、projection、execution、amendment、migration、command、Git、CLI 等职责单一的模块
+- track-ai-plans：合并重复的 SHA-256 与 Git 脏文件路径辅助函数为单一实现
+
+### 文档
+- project：更新技能目录描述与使用示例，覆盖 `qing-plans`、`single` 审查策略与免运行时安装
+- track-ai-plans：将参考文档的示例整体换成中性的 CSV 导出场景，不再使用描述 skill 自身运行时架构的例子，避免例子本身变成不准确的架构说明
+
 ## 3.2.0 - 2026-08-10
 
 ### 新功能

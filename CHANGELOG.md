@@ -1,3 +1,35 @@
+## 4.0.0 - 2026-08-11
+
+### Breaking Changes
+- track-ai-plans: Store V2 plans and the dashboard under `qing-plans/`; retain safe read-only support and staged migration for legacy `plans/` stores
+- track-ai-plans: Replace per-phase review gates with `none` and `single` review policies; `single` independently reviews the initial plan and material amendments
+
+### Features
+- track-ai-plans: Discover unfinished plans deterministically across agents and computers with explicit checkpoints, handoff portability, and paused-plan protection
+- track-ai-plans: Track an AI-maintained project map, module dependencies, planned/observed/verified files, reasons, execution attribution, amendments, issues, and append-only verification attempts
+- track-ai-plans: Add a module-aware dashboard with plan and phase selection, dependency visualization, file evidence, amendments, and handoff status
+- track-ai-plans: Add a zh/en language toggle to the dashboard, persisted per browser
+- track-ai-plans: Add staged, hash-verified V1 migration that preserves the legacy store and reports when it is safe for the user to delete
+
+### Fixes
+- track-ai-plans: Keep the runtime in the skill and install only `dashboard.html` into a repository, so a repository carries its plan data and a self-contained viewer without vendoring an executable copy that can silently drift from the skill that writes it
+- track-ai-plans: Give `install-dashboard`, `validate`, and `resume` a clear next step instead of a raw missing-file error when no plan store exists yet, and stop a failed command from leaving an empty `qing-plans/` directory behind
+- track-ai-plans: Reject a module dependency that would create a cycle at `upsert-dependency` time instead of only detecting it later in `validate` with no way to undo it
+- track-ai-plans: Stop `validate` from failing on a pending-review temporary amendment whose cleanup item is created by that amendment's own (not yet applied) operations
+- track-ai-plans: Scope the dashboard's per-plan impact map and dependency edges to that plan's own frozen `status.json` projection instead of the live root `project-map.json`, so a completed or cancelled plan's map no longer changes when a later plan edits modules or dependencies
+- track-ai-plans: Downgrade the dashboard's file-verification badge from "verified" to "mismatched" when the observed action disagrees with the planned action, matching the check that already blocks completion
+- track-ai-plans: Stop writing `__pycache__` into the user's repository, which previously pinned handoff readiness to `local-only` even on a clean commit
+- track-ai-plans: Stop writing an `AGENTS.md` discovery block into the repository root; `qing-plans/index.json` discovery already happens through this skill's own preflight instructions
+- track-ai-plans: Compare the checkpoint's recorded commit against `HEAD` by ancestry instead of equality, since the recorded commit is always one commit behind the moment the checkpoint is itself committed with the code — the old check raised a false "HEAD differs from checkpoint" warning on every correctly committed-and-pushed handoff
+
+### Refactor
+- track-ai-plans: Split the plan runtime into focused storage, domain, projection, execution, amendment, migration, command, Git, and CLI modules
+- track-ai-plans: Consolidate duplicate SHA-256 and Git dirty-path helpers into single implementations
+
+### Documentation
+- project: Update the skill catalog description and usage example for `qing-plans`, the `single` review policy, and the dependency-free runtime
+- track-ai-plans: Rewrite the reference walkthrough around a neutral CSV-export example instead of one describing the skill's own runtime, so the example no longer doubles as inaccurate architecture guidance
+
 ## 3.2.0 - 2026-08-10
 
 ### Features
