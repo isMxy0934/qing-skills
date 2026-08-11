@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 2,
+  "revision": 0,
+  "updatedAt": "2026-08-11T05:20:53.691451Z",
+  "modules": [
+    {
+      "id": "_unmapped",
+      "name": "Unmapped",
+      "description": "Legacy or not-yet-classified paths",
+      "pathPatterns": [],
+      "reason": "System fallback for incomplete classification",
+      "evidence": "Qing Plans V2 schema",
+      "introducedByPlan": null,
+      "updatedByPlan": null
+    },
+    {
+      "id": "_cross-cutting",
+      "name": "Cross-cutting",
+      "description": "Changes spanning several modules or no repository files",
+      "pathPatterns": [],
+      "reason": "System bucket for cross-module or no-file work",
+      "evidence": "Qing Plans V2 schema",
+      "introducedByPlan": null,
+      "updatedByPlan": null
+    }
+  ],
+  "dependencies": []
+}

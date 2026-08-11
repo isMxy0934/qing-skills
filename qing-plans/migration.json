@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 2,
+  "source": "plans",
+  "target": "qing-plans",
+  "state": "verified",
+  "verifiedAt": "2026-08-11T05:20:53.697286Z",
+  "safeToDeleteLegacy": true,
+  "planCount": 1,
+  "eventCount": 25,
+  "sourceFiles": [
+    {
+      "path": "index.json",
+      "sha256": "1da521019a7371d0036536d444906fa4964f9a8c74574d197ba7f9827c654129"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-25-07.788665Z-plan-created-a859b782.json",
+      "sha256": "3985164782745fd89e1ba1c67712e3c7cfeea33c831e1d1eb4ac505d90c5d6dc"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-25-07.840011Z-phase-added-470ee804.json",
+      "sha256": "0999da32abb6a3d63914fd1dd525b93582179d098bca78ecf8586c9039df375c"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-25-07.892733Z-item-added-187bea2f.json",
+      "sha256": "02d028be48b727220741d5777817bebb0da0de8301e4bd6bec614202a4117040"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-25-07.947664Z-item-added-0a9f4a6a.json",
+      "sha256": "4798746c643c57015d65bf23682eaaa5c25b18b8f9f22aad34f9ec8a96eaecbb"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-25-08.003932Z-phase-added-d0f6244e.json",
+      "sha256": "c9be7e487d4ab17831b2b42885ca15941ab504c004c2d5a265bebd85aa04bb31"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-25-08.059942Z-item-added-4f639e47.json",
+      "sha256": "3036462bdbafbce945d31eac8b70b117015b152835e253c12a64903357f7f59e"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-25-08.118164Z-item-added-1bec505d.json",
+      "sha256": "bfe5fe992f2c3db28b0969507acebab2564138b5f686e323d4e7d593f36dc754"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-26-11.671917Z-item-added-2653b144.json",
+      "sha256": "a04ec71e2876f28807e219080819ae0e331a1c08a7d6b2d440d3590aacfc1316"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-34-35.435152Z-plan-transitioned-0aad122b.json",
+      "sha256": "ccf048e280253008554d947cdfb9dc549c50b2f52cbd9cb149ef389a4b518166"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-34-50.363970Z-item-updated-47f50906.json",
+      "sha256": "f75c9c0b294b9b99c96697e788549668f006c8016531f6c0a7b2786272119a47"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-38-02.347969Z-item-verified-091a3625.json",
+      "sha256": "33c869584c09a4bbf2b6d2989ece5730f3fc6b1294c81b25561ff4ca7a2876e0"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-38-02.452469Z-item-updated-a342beda.json",
+      "sha256": "eee97a9646222e436b4e7bdf11ebcc285ba1314b93a64a37f2bfd22beab2dc1c"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-38-02.554262Z-item-verified-147b6206.json",
+      "sha256": "c7fb536a1d77ae3ff2a9966534e98059aad43ef0550d7ea5bc2d4b29f61f6f5b"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-40-08.900641Z-execution-stopped-fa56e0ea.json",
+      "sha256": "7a3a61c2ded52952a8c3225dd8f280232eba9d2390f9a3665dd270a66a27e624"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-40-08.995588Z-item-updated-5cb075d1.json",
+      "sha256": "cf49201a8d70c438a695d325d3a3e01e95c9e9632ad6b44ebeeb4e88fb4e26f8"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-49-03.558374Z-item-verified-29b81d36.json",
+      "sha256": "9ec6f4de7f5261996e889705087edda119c5ee23e6ecadc836d3cecf4af974bd"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-49-03.707375Z-item-updated-0af9ebcd.json",
+      "sha256": "66422e69deb50f8f21a48b156305a82b14fcd37c898befded3ac39dbc6b0f5bc"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-58-38.663822Z-item-verified-e2bf0605.json",
+      "sha256": "70fb04606c1f181b9cb35e18607d755ebf28726d8a03921a4a79954e2fe46c71"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-58-38.817543Z-item-updated-53667974.json",
+      "sha256": "8f6cad864985a48c7a696581531c53a78579dc949827b3f564545759e514686b"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T05-59-34.400463Z-item-verified-19d124bb.json",
+      "sha256": "3b9e142de03759437a0dfd9619b55e75d31dc5d6c6f994817de6c3cab60fc696"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T06-01-12.130522Z-item-added-5d9be9d1.json",
+      "sha256": "fddfcedb076e8f0e4d35b23b1aeb07a5a30da1ae92f31e363a780703799d6453"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T06-01-12.229392Z-item-updated-5fb835f3.json",
+      "sha256": "faf62b6189bd05717141c6bc49f5b861911ae3cd93a8e73104d3d120f00aa0a9"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T06-03-34.189783Z-item-verified-feca34d4.json",
+      "sha256": "045392d90d21492ffb4886e481c1228f00a5e7a991db625dcaaa7f038009bca0"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T06-05-11.008553Z-phase-reviewed-839b0f0a.json",
+      "sha256": "6c91565ff092729b16febb6fa72b65f18faac390449783e7e57add4ef03868b9"
+    },
+    {
+      "path": "review-gated-plans/events/2026-08-09T06-05-11.146767Z-plan-transitioned-5b4c5202.json",
+      "sha256": "b1fcc3bff2cdd0617266899c9441317690cffc0f6d629f07693a1d4133f04431"
+    },
+    {
+      "path": "review-gated-plans/plan.json",
+      "sha256": "35c3c096b8dcfbdee6ab825b899f1d47472f9a2b5a124c31dd59702539e908e8"
+    },
+    {
+      "path": "review-gated-plans/status.json",
+      "sha256": "32cc7945dc4d86feac2ae05e92c81425a3761ce4e39f44a27d1bf5e97634630f"
+    }
+  ]
+}

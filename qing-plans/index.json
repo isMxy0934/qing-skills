@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 2,
+  "revision": 26,
+  "currentPlanSlug": null,
+  "updatedAt": "2026-08-11T05:20:53.691116Z",
+  "plans": [
+    {
+      "slug": "review-gated-plans",
+      "name": "移动端仪表盘与审查门禁",
+      "state": "completed",
+      "path": "review-gated-plans/plan.json",
+      "createdAt": "2026-08-09T05:25:07.787761Z",
+      "updatedAt": "2026-08-09T06:05:11.147363Z",
+      "activatedAt": "2026-08-09T05:34:35.435024Z",
+      "baselineCommit": "02113f0ea4fe606454b534821a0e9ef52eae313f",
+      "replacedBy": null
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 2,
+  "eventId": "2026-08-09T06-01-12.130522Z-item-added-5d9be9d1",
+  "occurredAt": "2026-08-09T06:01:12.130522Z",
+  "type": "item-added",
+  "planSlug": "review-gated-plans",
+  "actor": "dashboard-gate-planner",
+  "actorType": "agent",
+  "details": {
+    "phaseId": "governance",
+    "itemId": "dashboard-review-gates",
+    "planReviewInvalidated": false
+  },
+  "legacySchemaVersion": 1
+}

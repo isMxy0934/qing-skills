@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 2,
+  "eventId": "2026-08-09T05-38-02.452469Z-item-updated-a342beda",
+  "occurredAt": "2026-08-09T05:38:02.452469Z",
+  "type": "item-updated",
+  "planSlug": "review-gated-plans",
+  "actor": "codex",
+  "actorType": "agent",
+  "details": {
+    "itemId": "dashboard-view-mode",
+    "status": "in-progress"
+  },
+  "legacySchemaVersion": 1
+}

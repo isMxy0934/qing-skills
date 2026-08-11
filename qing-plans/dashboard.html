@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Qing Plans</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --canvas: light-dark(#f3f5f7, #0f1318);
+      --surface: light-dark(#fff, #181e24);
+      --soft: light-dark(#f7f9fb, #20272f);
+      --ink: light-dark(#17202a, #edf2f5);
+      --muted: light-dark(#657281, #9da8b3);
+      --line: light-dark(#dfe5ea, #323b45);
+      --brand: light-dark(#176b62, #69cebf);
+      --brand-soft: light-dark(#e5f3f0, #173934);
+      --blue: light-dark(#2677c5, #73b8ff);
+      --blue-soft: light-dark(#e8f2fc, #19344d);
+      --amber: light-dark(#a76500, #f0b24b);
+      --amber-soft: light-dark(#fff4dd, #3b2c15);
+      --green: light-dark(#277a45, #68cf89);
+      --green-soft: light-dark(#e7f5eb, #193722);
+      --red: light-dark(#b44242, #ff8585);
+      --red-soft: light-dark(#fceaea, #432020);
+      --shadow: light-dark(0 18px 50px rgb(28 40 54 / 13%), 0 20px 58px rgb(0 0 0 / 34%));
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--canvas); color: var(--ink); font: 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; }
+    button, select { color: inherit; font: inherit; }
+    button { cursor: pointer; }
+    .shell { width: min(1440px, calc(100% - 28px)); margin: 20px auto; overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); }
+    .appbar, .plan-head, .panel-head, .module-top, .footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .appbar { padding: 14px 18px; border-bottom: 1px solid var(--line); }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-mark { display: grid; place-items: center; width: 31px; height: 31px; border-radius: 9px; background: var(--brand); color: var(--surface); font-weight: 800; }
+    .brand-name { font-weight: 700; }
+    .path, .muted, .meta { color: var(--muted); }
+    .path, .meta { font-size: 12px; }
+    .actions { display: flex; gap: 9px; }
+    select, .button, .phase { min-height: 36px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); padding: 7px 10px; }
+    .button:hover, .phase:hover { background: var(--soft); }
+    .button[aria-pressed="true"], .phase[aria-pressed="true"] { color: var(--surface); background: var(--ink); border-color: var(--ink); }
+    .content { background: var(--canvas); }
+    .handoff { display: grid; grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(130px, .65fr)); gap: 1px; border-bottom: 1px solid var(--line); background: var(--line); }
+    .handoff > div { min-width: 0; padding: 14px 17px; background: var(--surface); }
+    .handoff .lead { background: var(--brand-soft); }
+    .eyebrow { color: var(--brand); font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+    .handoff-value { margin-top: 4px; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+    .handoff-note { margin-top: 4px; color: var(--muted); font-size: 12px; }
+    .portable { color: var(--green); }
+    .local-only { color: var(--amber); }
+    .plan-head { align-items: flex-start; padding: 19px 20px 13px; }
+    h1 { margin: 3px 0 4px; font-size: 24px; line-height: 1.2; letter-spacing: -.025em; }
+    .goal { max-width: 760px; color: var(--muted); }
+    .pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 9px; background: var(--brand-soft); color: var(--brand); font-size: 12px; font-weight: 650; white-space: nowrap; }
+    .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .phasebar { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 20px 16px; }
+    .phase { min-height: auto; border-radius: 999px; color: var(--muted); }
+    .summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-block: 1px solid var(--line); background: var(--surface); }
+    .summary > div { padding: 12px 18px; }
+    .summary > div + div { border-left: 1px solid var(--line); }
+    .label { color: var(--muted); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
+    .value { margin-top: 1px; font-size: 20px; font-weight: 650; }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(300px, .7fr); min-height: 420px; border-bottom: 1px solid var(--line); }
+    .map-panel, .detail-panel, .section { padding: 17px 19px 20px; }
+    .detail-panel { border-left: 1px solid var(--line); background: var(--soft); }
+    h2 { margin: 0; font-size: 15px; }
+    .map-wrap { min-height: 340px; margin-top: 12px; overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--canvas); }
+    svg { display: block; min-width: 720px; width: 100%; }
+    .edge { stroke: color-mix(in srgb, var(--muted) 58%, transparent); stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .node { cursor: pointer; }
+    .node rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; rx: 10; }
+    .node text { fill: var(--ink); pointer-events: none; }
+    .node .node-meta { fill: var(--muted); font-size: 11px; }
+    .node.changed rect { fill: var(--blue-soft); stroke: var(--blue); }
+    .node.affected rect { fill: var(--amber-soft); stroke: var(--amber); }
+    .node.selected rect { stroke: var(--brand); stroke-width: 3; }
+    .legend { display: flex; flex-wrap: wrap; gap: 13px; padding-top: 9px; color: var(--muted); font-size: 12px; }
+    .legend i { display: inline-block; width: 10px; height: 10px; margin-right: 5px; border: 1px solid currentColor; border-radius: 3px; }
+    .changed-key { color: var(--blue); } .affected-key { color: var(--amber); }
+    .module-name { font-size: 19px; font-weight: 650; }
+    .module-block { padding: 11px 0; border-top: 1px solid var(--line); }
+    .relations { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .relation { padding: 9px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
+    .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+    .chip { padding: 2px 6px; border-radius: 5px; background: var(--brand-soft); color: var(--brand); font-size: 11px; }
+    .section { background: var(--surface); border-bottom: 1px solid var(--line); }
+    .table-wrap { margin-top: 10px; overflow: auto; border: 1px solid var(--line); border-radius: 11px; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th { padding: 8px 10px; background: var(--soft); color: var(--muted); font-size: 11px; font-weight: 550; text-align: left; }
+    td { padding: 9px 10px; border-top: 1px solid var(--line); vertical-align: top; font-size: 12px; overflow-wrap: anywhere; }
+    code { color: inherit; font-size: 11px; }
+    .status { display: inline-flex; align-items: center; gap: 5px; }
+    .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .verified { color: var(--green); } .observed { color: var(--blue); } .pending { color: var(--amber); } .failed { color: var(--red); } .mismatched { color: var(--red); }
+    .audit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+    .audit-card { padding: 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); }
+    .audit-card + .audit-card { margin-top: 7px; }
+    .footer { padding: 11px 18px; color: var(--muted); font-size: 11px; background: var(--soft); }
+    .empty, .error { padding: 28px; color: var(--muted); text-align: center; }
+    .error { color: var(--red); }
+    @media (max-width: 900px) {
+      .handoff { grid-template-columns: 1fr 1fr; }
+      .workspace { grid-template-columns: 1fr; }
+      .detail-panel { border-top: 1px solid var(--line); border-left: 0; }
+      .summary { grid-template-columns: repeat(2, 1fr); }
+      .summary > div:nth-child(odd) { border-left: 0; }
+    }
+    @media (max-width: 620px) {
+      .shell { width: 100%; margin: 0; border-radius: 0; }
+      .appbar, .plan-head, .footer { align-items: stretch; flex-direction: column; }
+      .actions, select { width: 100%; }
+      .handoff, .audit-grid { grid-template-columns: 1fr; }
+      .summary { grid-template-columns: 1fr 1fr; }
+      .map-panel, .detail-panel, .section { padding-inline: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="appbar">
+      <div class="brand"><div class="brand-mark">Q</div><div><div class="brand-name">Qing Plans</div><div class="path">qing-plans/dashboard.html</div></div></div>
+      <div class="actions"><select id="planSelect"></select><button class="button" id="globalToggle" aria-pressed="false"></button><button class="button" id="langToggle"></button></div>
+    </header>
+    <div id="app"><div class="empty" id="loading"></div></div>
+    <footer class="footer"><span id="footerNote"></span><span id="generatedAt"></span></footer>
+  </main>
+  <script>
+    const STRINGS = {
+      zh: {
+        selectPlanAria: '选择 Plan', globalToggle: '项目全图', langToggle: 'EN', loading: '正在读取计划数据…',
+        footerNote: '数据来自 index.json、project-map.json 与冻结/生成的 status.json',
+        handoffLead: '接力入口 · 下一步', handoffNone: '暂无', stopReason: '停止原因：', notRecorded: '未记录',
+        workItem: '工作项', crossDeviceStatus: '跨设备状态', directModules: '直接模块', upDownstream: '上下游影响',
+        observedFiles: '观测文件', issues: '问题', planScopedGraph: 'Plan 影响图', globalGraph: '项目全图',
+        edgeHint: '箭头表示 A dependsOn B', noModuleData: '当前 Plan 还没有模块影响数据。', graphAria: '模块依赖图',
+        legendChanged: 'Plan 直接修改', legendAffected: '上下游受影响', legendUnchanged: '项目全图未影响',
+        pickModule: '选择模块查看详情', moduleResponsibility: '模块职责', noDescription: '尚未补充', noPathPattern: '无路径模式',
+        mapReason: '建图原因：', evidence: '证据：', whyChanged: '为什么修改', noDirectChange: '当前范围没有直接修改',
+        upstream: '上游依赖', downstream: '下游消费者', none: '无', phaseFiles: '本阶段文件',
+        noFileImpactRow: '无文件影响', changesTitle: '阶段变更 · Planned / Observed / Verified',
+        changesSubtitle: '文件、修改原因、实际观测与验证证据放在同一行', colModule: '模块', colPlannedFile: '计划文件',
+        colWhy: '为什么修改', colObservedAction: '实际动作', colVerify: '验证', noFileDeclared: '本阶段没有文件声明',
+        statusVerified: '已验证', statusObserved: '已观测', statusPending: '待完成', statusFailed: '失败',
+        statusMismatched: '不一致', noVerification: '无验证记录', auditTitle: '范围变更与问题', allPhases: '全部阶段',
+        noPlans: '还没有 Plan。', loadError: '无法读取 Qing Plans：', loadErrorHint: '请通过 HTTP 服务打开本文件，并运行 planctl.py refresh-status 刷新状态。',
+        snapshot: '快照：', impactChanged: '已修改', impactAffected: '受影响', impactUnchanged: '未变化',
+      },
+      en: {
+        selectPlanAria: 'Select plan', globalToggle: 'Global map', langToggle: '中文', loading: 'Loading plan data…',
+        footerNote: 'Data from index.json, project-map.json, and frozen/generated status.json',
+        handoffLead: 'Handoff · Next action', handoffNone: 'None', stopReason: 'Stop reason: ', notRecorded: 'not recorded',
+        workItem: 'Work item', crossDeviceStatus: 'Cross-device status', directModules: 'Direct modules', upDownstream: 'Up/downstream',
+        observedFiles: 'Observed files', issues: 'Issues', planScopedGraph: 'Plan impact map', globalGraph: 'Global map',
+        edgeHint: 'Arrows mean A dependsOn B', noModuleData: 'This plan has no module impact data yet.', graphAria: 'Module dependency graph',
+        legendChanged: 'Directly changed by plan', legendAffected: 'Affected upstream/downstream', legendUnchanged: 'Unaffected in global map',
+        pickModule: 'Select a module to see details', moduleResponsibility: 'Module responsibility', noDescription: 'Not documented yet', noPathPattern: 'No path patterns',
+        mapReason: 'Boundary reason: ', evidence: 'Evidence: ', whyChanged: 'Why it changed', noDirectChange: 'No direct change in this scope',
+        upstream: 'Upstream', downstream: 'Downstream consumers', none: 'None', phaseFiles: 'Files in this phase',
+        noFileImpactRow: 'No file impact', changesTitle: 'Phase changes · Planned / Observed / Verified',
+        changesSubtitle: 'File, reason, observed outcome, and verification evidence on one row', colModule: 'Module', colPlannedFile: 'Planned file',
+        colWhy: 'Why it changed', colObservedAction: 'Observed action', colVerify: 'Verification', noFileDeclared: 'No files declared for this phase',
+        statusVerified: 'Verified', statusObserved: 'Observed', statusPending: 'Pending', statusFailed: 'Failed',
+        statusMismatched: 'Mismatched', noVerification: 'No verification record', auditTitle: 'Scope changes & issues', allPhases: 'All phases',
+        noPlans: 'No plans yet.', loadError: 'Could not read Qing Plans: ', loadErrorHint: 'Serve this file over HTTP and run planctl.py refresh-status to refresh state.',
+        snapshot: 'Snapshot: ', impactChanged: 'changed', impactAffected: 'affected', impactUnchanged: 'unchanged',
+      },
+    };
+    const state = { index: null, map: null, status: null, phase: 'all', selectedModule: null, global: false,
+      lang: localStorage.getItem('qing-plans-lang') === 'en' ? 'en' : 'zh' };
+    const t = key => STRINGS[state.lang][key];
+    const $ = selector => document.querySelector(selector);
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+    const fmt = value => value ? new Date(value).toLocaleString() : '—';
+    const fetchJson = async path => { const response = await fetch(`${path}?v=${Date.now()}`); if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`); return response.json(); };
+    const impactLabel = impact => ({changed: t('impactChanged'), affected: t('impactAffected')})[impact] || t('impactUnchanged');
+
+    function phaseItems() {
+      const phases = state.status?.phases || [];
+      return (state.phase === 'all' ? phases : phases.filter(p => p.id === state.phase)).flatMap(p => p.items || []);
+    }
+    function itemFiles(item) {
+      return (item.changeSets || []).flatMap(set => (set.files || []).map(file => ({...file, moduleId: set.moduleId, reason: set.reason})));
+    }
+    function mismatchKeys() {
+      return new Set((state.status.derivedIssues || []).map(issue => `${issue.itemId}:${issue.observation?.path}`));
+    }
+    function verificationState(item, observation, mismatches) {
+      if (item.status === 'failed') return ['failed', t('statusFailed')];
+      if (observation && mismatches.has(`${item.id}:${observation.path}`)) return ['mismatched', t('statusMismatched')];
+      const passed = (item.verificationAttempts || []).some(a => a.result === 'pass');
+      if (passed && observation?.observedState === 'change-observed') return ['verified', t('statusVerified')];
+      if (observation?.observedState === 'change-observed') return ['observed', t('statusObserved')];
+      return ['pending', t('statusPending')];
+    }
+    function renderHandoff() {
+      const h = state.status.handoff || {};
+      const next = h.nextAction || state.status.nextActions?.[0] || {};
+      const portability = h.portability || h.handoff?.readiness || 'unknown';
+      return `<section class="handoff">
+        <div class="lead"><div class="eyebrow">${esc(t('handoffLead'))}</div><div class="handoff-value">${esc(next.id ? `${next.id} · ${next.message}` : next.message || t('handoffNone'))}</div><div class="handoff-note">${esc(t('stopReason'))}${esc(h.stopReason || t('notRecorded'))} ${h.warnings?.length ? `· ${esc(h.warnings.join('；'))}` : ''}</div></div>
+        <div><div class="label">${esc(t('workItem'))}</div><div class="handoff-value">${esc(h.itemId || h.lastCompletedItemId || '—')}</div><div class="handoff-note">Plan rev ${esc(h.planRevision ?? h.currentPlanRevision ?? '—')}</div></div>
+        <div><div class="label">Checkpoint</div><div class="handoff-value"><code>${esc((h.headCommit || '').slice(0, 9) || '—')}</code></div><div class="handoff-note">${esc(h.branch || h.currentBranch || 'detached')} · ${fmt(h.createdAt)}</div></div>
+        <div><div class="label">${esc(t('crossDeviceStatus'))}</div><div class="handoff-value ${esc(portability)}">${esc(portability)}</div><div class="handoff-note">Map rev ${esc(h.projectMapRevision ?? h.currentProjectMapRevision ?? '—')}</div></div>
+      </section>`;
+    }
+    function renderSummary() {
+      const s = state.status.summary || {};
+      const c = state.status.changeCoverage || {};
+      return `<section class="summary">
+        <div><div class="label">${esc(t('workItem'))}</div><div class="value">${s.completedItems || 0}/${s.totalItems || 0}</div></div>
+        <div><div class="label">${esc(t('directModules'))}</div><div class="value">${s.changedModules || 0}</div></div>
+        <div><div class="label">${esc(t('upDownstream'))}</div><div class="value">${s.affectedModules || 0}</div></div>
+        <div><div class="label">${esc(t('observedFiles'))}</div><div class="value">${c.observed || 0}/${c.planned || 0}</div></div>
+        <div><div class="label">${esc(t('issues'))}</div><div class="value">${s.openIssues || 0}</div></div>
+      </section>`;
+    }
+    function graphSource() {
+      // Non-global view stays scoped to this plan's own projectMap, which is what a
+      // terminal (completed/cancelled) plan froze at completion — never the live root map.
+      return state.global ? state.map : state.status.projectMap;
+    }
+    function moduleRelations(dependencies, moduleId) {
+      const upstream = [...new Set(dependencies.filter(d => d.moduleId === moduleId).map(d => d.dependsOn))].sort();
+      const downstream = [...new Set(dependencies.filter(d => d.dependsOn === moduleId).map(d => d.moduleId))].sort();
+      return {upstream, downstream};
+    }
+    function graphModules() {
+      const source = graphSource();
+      const dependencies = source?.dependencies || [];
+      // Raw project-map.json (global view) has no upstream/downstream fields — only the
+      // server-computed status.projectMap does — so derive them here for both sources.
+      const mapModules = (source?.modules || []).map(module => ({...module, ...moduleRelations(dependencies, module.id)}));
+      const direct = state.phase === 'all'
+        ? new Set(state.status.projectMap?.directModules || [])
+        : new Set(phaseItems().flatMap(item => item.noFileImpact ? ['_cross-cutting'] : (item.changeSets || []).map(change => change.moduleId)));
+      const affected = new Set();
+      dependencies.forEach(edge => {
+        if (direct.has(edge.moduleId)) affected.add(edge.dependsOn);
+        if (direct.has(edge.dependsOn)) affected.add(edge.moduleId);
+      });
+      direct.forEach(id => affected.delete(id));
+      const withImpact = module => ({...module,
+        impact: direct.has(module.id) ? 'changed' : affected.has(module.id) ? 'affected' : 'unchanged'});
+      if (state.global) return mapModules.map(withImpact);
+      const visible = new Set([...direct, ...affected]);
+      return mapModules.filter(module => visible.has(module.id)).map(withImpact);
+    }
+    function renderGraph() {
+      const modules = graphModules();
+      if (!modules.length) return `<div class="empty">${esc(t('noModuleData'))}</div>`;
+      if (!state.selectedModule || !modules.some(m => m.id === state.selectedModule)) state.selectedModule = modules[0].id;
+      const width = 760, cols = 3, nodeW = 190, nodeH = 70, xGap = 48, yGap = 62;
+      const rows = Math.ceil(modules.length / cols), height = Math.max(330, 50 + rows * (nodeH + yGap));
+      const pos = new Map(modules.map((m, i) => [m.id, {x: 40 + (i % cols) * (nodeW + xGap), y: 35 + Math.floor(i / cols) * (nodeH + yGap)}]));
+      const edges = (graphSource()?.dependencies || []).filter(d => pos.has(d.moduleId) && pos.has(d.dependsOn)).map(d => {
+        const a = pos.get(d.moduleId), b = pos.get(d.dependsOn);
+        return `<path class="edge" d="M ${a.x + nodeW/2} ${a.y + nodeH/2} C ${a.x + nodeW/2} ${b.y + nodeH/2}, ${b.x + nodeW/2} ${a.y + nodeH/2}, ${b.x + nodeW/2} ${b.y + nodeH/2}"/>`;
+      }).join('');
+      const nodes = modules.map(m => { const p = pos.get(m.id); return `<g class="node ${esc(m.impact || 'unchanged')} ${m.id === state.selectedModule ? 'selected' : ''}" data-module="${esc(m.id)}" transform="translate(${p.x},${p.y})"><rect width="${nodeW}" height="${nodeH}"/><text x="14" y="27" font-size="14" font-weight="650">${esc(m.name)}</text><text class="node-meta" x="14" y="49">${esc(m.id)} · ${esc(impactLabel(m.impact))}</text></g>`; }).join('');
+      return `<div class="map-wrap"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(t('graphAria'))}"><defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/></marker></defs>${edges}${nodes}</svg></div><div class="legend"><span class="changed-key"><i></i>${esc(t('legendChanged'))}</span><span class="affected-key"><i></i>${esc(t('legendAffected'))}</span><span><i></i>${esc(t('legendUnchanged'))}</span></div>`;
+    }
+    function renderModuleDetail() {
+      const modules = graphModules();
+      const module = modules.find(m => m.id === state.selectedModule) || modules[0];
+      if (!module) return `<div class="empty">${esc(t('pickModule'))}</div>`;
+      const files = phaseItems().flatMap(item => itemFiles(item).filter(file => file.moduleId === module.id).map(file => ({...file, item})));
+      const reasons = [...new Set(files.map(file => file.reason).filter(Boolean))];
+      return `<div class="module-top"><div><div class="module-name">${esc(module.name)}</div><div class="meta">${esc(module.id)}</div></div><span class="pill">${esc(impactLabel(module.impact))}</span></div>
+        <div class="module-block"><div class="label">${esc(t('moduleResponsibility'))}</div><div>${esc(module.description || t('noDescription'))}</div><div class="chips">${(module.pathPatterns || []).map(p => `<span class="chip">${esc(p)}</span>`).join('') || `<span class="muted">${esc(t('noPathPattern'))}</span>`}</div><div class="meta">${esc(t('mapReason'))}${esc(module.reason || '—')} · ${esc(t('evidence'))}${esc(module.evidence || '—')}</div></div>
+        <div class="module-block"><div class="label">${esc(t('whyChanged'))}</div><div>${reasons.map(esc).join('；') || esc(t('noDirectChange'))}</div></div>
+        <div class="module-block relations"><div class="relation"><div class="label">${esc(t('upstream'))}</div><div>${(module.upstream || []).map(esc).join('、') || esc(t('none'))}</div></div><div class="relation"><div class="label">${esc(t('downstream'))}</div><div>${(module.downstream || []).map(esc).join('、') || esc(t('none'))}</div></div></div>
+        <div class="module-block"><div class="label">${esc(t('phaseFiles'))}</div>${files.map(file => `<div><code>${esc(file.path)}</code> · ${esc(file.action)} · ${esc(file.item.id)}</div>`).join('') || `<div class="muted">${esc(t('none'))}</div>`}</div>`;
+    }
+    function renderChanges() {
+      const rows = [];
+      const mismatches = mismatchKeys();
+      for (const item of phaseItems()) {
+        const observations = new Map((item.observations || []).map(o => [o.path, o]));
+        const attempts = item.verificationAttempts || [];
+        for (const file of itemFiles(item)) {
+          const observation = observations.get(file.path);
+          const [klass, label] = verificationState(item, observation, mismatches);
+          rows.push(`<tr><td>${esc(file.moduleId)}</td><td><code>${esc(file.path)}</code><div class="meta">${esc(file.action)}${file.from ? ` ← ${esc(file.from)}` : ''}</div></td><td>${esc(file.reason)}<div class="meta">${esc(item.id)} · ${esc(item.title)}</div></td><td>${esc(observation?.observedAction || '—')}</td><td><span class="status ${klass}">${label}</span><div class="meta">${attempts.length ? esc(attempts.at(-1).evidence) : esc(t('noVerification'))}</div></td></tr>`);
+        }
+        if (item.noFileImpact) rows.push(`<tr><td>_cross-cutting</td><td>${esc(t('noFileImpactRow'))}</td><td>${esc(item.purpose)}</td><td>—</td><td><span class="status ${item.status === 'done' ? 'verified' : 'pending'}">${esc(item.status)}</span></td></tr>`);
+      }
+      return `<section class="section"><div class="panel-head"><div><h2>${esc(t('changesTitle'))}</h2><div class="meta">${esc(t('changesSubtitle'))}</div></div></div><div class="table-wrap"><table><thead><tr><th style="width:15%">${esc(t('colModule'))}</th><th style="width:25%">${esc(t('colPlannedFile'))}</th><th style="width:28%">${esc(t('colWhy'))}</th><th style="width:14%">${esc(t('colObservedAction'))}</th><th style="width:18%">${esc(t('colVerify'))}</th></tr></thead><tbody>${rows.join('') || `<tr><td colspan="5" class="empty">${esc(t('noFileDeclared'))}</td></tr>`}</tbody></table></div></section>`;
+    }
+    function renderAudit() {
+      const amendments = state.status.amendments || [], issues = [...(state.status.issues || []), ...(state.status.derivedIssues || [])];
+      const cards = (values, kind) => values.map(value => `<article class="audit-card"><strong>${esc(value.id || value.type)}</strong> · ${esc(value.status || value.severity || '')}<div>${esc(value.reason || value.title || value.detail || '')}</div><div class="meta">${kind === 'amendment' ? `${esc(value.kind)} · ${(value.operations || []).length} operations` : esc(value.nextAction || value.itemId || '')}</div></article>`).join('') || `<div class="muted">${esc(t('none'))}</div>`;
+      return `<section class="section"><h2>${esc(t('auditTitle'))}</h2><div class="audit-grid"><div><div class="label">Amendments</div>${cards(amendments, 'amendment')}</div><div><div class="label">Issues / Warnings</div>${cards(issues, 'issue')}</div></div></section>`;
+    }
+    function render() {
+      const status = state.status, plan = status.plan;
+      const phases = status.phases || [];
+      $('#app').innerHTML = `<div class="content">${renderHandoff()}<section class="plan-head"><div><div class="eyebrow">${esc(plan.reviewPolicy)} review · rev ${esc(plan.revision)}</div><h1>${esc(plan.name)}</h1><div class="goal">${esc(plan.goal)}</div></div><span class="pill">${esc(plan.state)}</span></section>
+        <nav class="phasebar"><button class="phase" data-phase="all" aria-pressed="${state.phase === 'all'}">${esc(t('allPhases'))}</button>${phases.map(p => `<button class="phase" data-phase="${esc(p.id)}" aria-pressed="${state.phase === p.id}">${esc(p.title)}</button>`).join('')}</nav>
+        ${renderSummary()}<section class="workspace"><div class="map-panel"><div class="panel-head"><div><h2>${state.global ? esc(t('globalGraph')) : esc(t('planScopedGraph'))}</h2><div class="meta">${esc(t('edgeHint'))}</div></div></div>${renderGraph()}</div><aside class="detail-panel">${renderModuleDetail()}</aside></section>${renderChanges()}${renderAudit()}</div>`;
+      $('#generatedAt').textContent = `${t('snapshot')}${fmt(status.generatedAt)} · Map rev ${graphSource()?.revision ?? '—'}`;
+      document.querySelectorAll('[data-phase]').forEach(button => button.addEventListener('click', () => { state.phase = button.dataset.phase; render(); }));
+      document.querySelectorAll('[data-module]').forEach(node => node.addEventListener('click', () => { state.selectedModule = node.dataset.module; render(); }));
+    }
+    function applyChrome() {
+      document.documentElement.lang = state.lang === 'en' ? 'en' : 'zh-CN';
+      $('#planSelect').setAttribute('aria-label', t('selectPlanAria'));
+      $('#globalToggle').textContent = t('globalToggle');
+      $('#langToggle').textContent = t('langToggle');
+      $('#footerNote').textContent = t('footerNote');
+      const loading = $('#loading');
+      if (loading) loading.textContent = t('loading');
+    }
+    async function loadPlan(slug) {
+      state.status = await fetchJson(`${slug}/status.json`);
+      state.phase = 'all'; state.selectedModule = state.status.projectMap?.directModules?.[0] || state.status.projectMap?.modules?.[0]?.id || null;
+      render();
+    }
+    async function init() {
+      applyChrome();
+      try {
+        [state.index, state.map] = await Promise.all([fetchJson('index.json'), fetchJson('project-map.json')]);
+        const select = $('#planSelect');
+        select.innerHTML = state.index.plans.map(plan => `<option value="${esc(plan.slug)}">${esc(plan.name)} · ${esc(plan.state)}</option>`).join('');
+        const initial = state.index.currentPlanSlug || state.index.plans.at(-1)?.slug;
+        if (!initial) { $('#app').innerHTML = `<div class="empty">${esc(t('noPlans'))}</div>`; return; }
+        select.value = initial;
+        select.addEventListener('change', () => loadPlan(select.value).catch(showError));
+        $('#globalToggle').addEventListener('click', event => { state.global = !state.global; event.currentTarget.setAttribute('aria-pressed', state.global); render(); });
+        $('#langToggle').addEventListener('click', () => {
+          state.lang = state.lang === 'en' ? 'zh' : 'en';
+          localStorage.setItem('qing-plans-lang', state.lang);
+          applyChrome();
+          if (state.status) render();
+        });
+        await loadPlan(initial);
+      } catch (error) { showError(error); }
+    }
+    function showError(error) { $('#app').innerHTML = `<div class="error">${esc(t('loadError'))}${esc(error.message)}<br>${esc(t('loadErrorHint'))}</div>`; }
+    init();
+  </script>
+</body>
+</html>

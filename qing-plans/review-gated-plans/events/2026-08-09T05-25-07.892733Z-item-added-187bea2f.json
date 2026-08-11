@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 2,
+  "eventId": "2026-08-09T05-25-07.892733Z-item-added-187bea2f",
+  "occurredAt": "2026-08-09T05:25:07.892733Z",
+  "type": "item-added",
+  "planSlug": "review-gated-plans",
+  "actor": "codex",
+  "actorType": "agent",
+  "details": {
+    "phaseId": "dashboard",
+    "itemId": "dashboard-mobile"
+  },
+  "legacySchemaVersion": 1
+}

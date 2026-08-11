@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 2,
+  "eventId": "2026-08-09T06-03-34.189783Z-item-verified-feca34d4",
+  "occurredAt": "2026-08-09T06:03:34.189783Z",
+  "type": "item-verified",
+  "planSlug": "review-gated-plans",
+  "actor": "dashboard-gate-implementer",
+  "actorType": "agent",
+  "details": {
+    "itemId": "dashboard-review-gates",
+    "result": "pass",
+    "evidence": "smoke_test 62 项通过；375px 浏览器验证审查区显示阶段门禁与下一步、无横向溢出且无控制台错误。"
+  },
+  "legacySchemaVersion": 1
+}

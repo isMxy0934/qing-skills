@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 2,
+  "eventId": "2026-08-09T06-05-11.008553Z-phase-reviewed-839b0f0a",
+  "occurredAt": "2026-08-09T06:05:11.008553Z",
+  "type": "phase-reviewed",
+  "planSlug": "review-gated-plans",
+  "actor": "governance-final-reviewer",
+  "actorType": "agent",
+  "details": {
+    "phaseId": "governance",
+    "result": "pass",
+    "evidence": "独立 subagent 最终审查通过：计划/阶段门禁、仪表盘审查区和 375px 移动端均符合要求；smoke_test 62 项通过。",
+    "reason": null
+  },
+  "legacySchemaVersion": 1
+}
